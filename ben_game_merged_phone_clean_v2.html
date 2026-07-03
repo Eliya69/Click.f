@@ -1,0 +1,3221 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#07111f" />
+  <title>בן נגד מפלצות וחייזרים — גרסת טלפון</title>
+  <!-- גרסת טלפון standalone: כל הדמויות מוטמעות בתוך הקובץ, לא צריך תיקיית assets -->
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:rgba(9,16,31,.82);
+      --panel2:rgba(255,255,255,.075);
+      --line:rgba(255,255,255,.14);
+      --text:#f6f8ff;
+      --muted:#aeb8d8;
+      --gold:#ffd166;
+      --green:#44f08d;
+      --red:#ff4f6d;
+      --blue:#58adff;
+      --purple:#b06cff;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;touch-action:none;overscroll-behavior:none;}
+    #gameWrap{position:relative;width:100vw;height:100vh;height:100dvh;background:radial-gradient(circle at 50% 18%,#203b78 0%,#121a3b 42%,#050914 100%);}
+    canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+
+    .hudTop{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;left:112px;display:flex;gap:8px;align-items:flex-start;justify-content:flex-end;pointer-events:none;z-index:5;}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.28);backdrop-filter:blur(8px);}
+    .stats{min-width:min(56vw,260px);padding:9px 10px;}
+    .nameRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .name{font-weight:950;font-size:16px;}
+    .coin{font-weight:950;color:var(--gold);white-space:nowrap;}
+    .small{font-size:12px;color:var(--muted);}
+    .bar{height:11px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden;border:1px solid rgba(255,255,255,.10);margin-top:6px;}
+    .fill{height:100%;width:100%;border-radius:999px;background:linear-gradient(90deg,#1dc96b,#9dff9c);transition:width .12s linear;}
+    .xpFill{background:linear-gradient(90deg,#4da8ff,#a36cff);}
+    .enemyPanel{min-width:112px;padding:9px 10px;text-align:center;}
+    .enemyPanel b{font-size:18px;}
+
+    .iconStack{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;display:flex;flex-direction:column;gap:8px;z-index:6;pointer-events:none;direction:ltr;}
+    .iconCard{width:86px;min-height:78px;padding:7px 6px;text-align:center;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.16);border-radius:17px;box-shadow:0 9px 25px rgba(0,0,0,.26);backdrop-filter:blur(8px);}
+    .inventoryTrigger{pointer-events:auto;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease;}
+    .inventoryTrigger:active{transform:scale(.96);border-color:rgba(255,209,102,.72);background:linear-gradient(180deg,rgba(255,209,102,.18),rgba(255,255,255,.06));}
+    .iconBubble{width:43px;height:43px;margin:0 auto 4px;border-radius:15px;display:grid;place-items:center;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);font-size:25px;}
+    .iconTitle{font-weight:950;font-size:12px;line-height:1.1;direction:rtl;}
+    .iconSub{font-size:10px;color:var(--muted);direction:rtl;}
+
+    .iconBubble.artBubble{background-position:center;background-repeat:no-repeat;background-size:contain;background-color:transparent;border:none;box-shadow:none;color:transparent;}
+    #heroIcon.heroArt,#weaponIcon.artBubble,#armorIcon.artBubble{background-color:transparent;border:none;box-shadow:none;}
+    .startHeroPreview{display:block;width:min(42vw,150px);max-height:170px;object-fit:contain;margin:4px auto 8px;filter:none;pointer-events:none;}
+
+    .centerMsg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(90vw,470px);padding:18px;text-align:center;z-index:20;pointer-events:auto;direction:rtl;}
+    .centerMsg h1{margin:0 0 8px;font-size:28px;line-height:1.05;}
+    .centerMsg p{margin:8px 0;color:#dbe4ff;}
+    button{border:0;border-radius:15px;padding:12px 16px;font-weight:950;font-size:16px;color:#211400;background:linear-gradient(180deg,#ffe08a,#f9ad22);box-shadow:0 8px 0 #9a6304,0 16px 24px rgba(0,0,0,.26);cursor:pointer;touch-action:manipulation;}
+    button:active{transform:translateY(5px);box-shadow:0 3px 0 #9a6304,0 8px 16px rgba(0,0,0,.22);}
+    .secondaryBtn{background:linear-gradient(180deg,#b8d9ff,#58adff);box-shadow:0 8px 0 #1a5f9a,0 16px 24px rgba(0,0,0,.26);}
+    .hidden{display:none!important;}
+    .userPanel{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:108px;transform:none;z-index:11;display:flex;align-items:center;gap:8px;padding:7px 9px;direction:rtl;pointer-events:auto;max-width:min(calc(100vw - 124px),420px);transition:max-width .18s ease,padding .18s ease,background .18s ease;}
+    .userPanel.userCollapsed{max-width:42px;padding:7px;overflow:hidden;}
+    .userPanel.userCollapsed .userAvatar,.userPanel.userCollapsed .userInfo,.userPanel.userCollapsed .authButtons{display:none;}
+    .userToggleBtn{width:30px;height:30px;border-radius:10px;padding:0;display:grid;place-items:center;flex:0 0 auto;box-shadow:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.12);color:var(--text);font-size:18px;line-height:1;}
+    .userToggleBtn:active{transform:scale(.95);box-shadow:none;}
+    .userAvatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-weight:950;flex:0 0 auto;}
+    .userAvatar img{width:100%;height:100%;object-fit:cover;display:block;}
+    .userInfo{display:flex;flex-direction:column;min-width:0;line-height:1.08;}
+    .userName{font-weight:950;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+    .saveStatus{font-size:10px;color:var(--muted);white-space:nowrap;}
+    .authButtons{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
+    .miniAuthBtn{box-shadow:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:var(--text);border-radius:11px;padding:7px 9px;font-size:11px;}
+    .miniAuthBtn:active{transform:scale(.96);box-shadow:none;}
+    .miniAuthBtn.google{background:rgba(255,255,255,.95);color:#172033;}
+    .miniAuthBtn.needsConfig{opacity:.72;}
+    .miniAuthBtn:disabled{opacity:.55;filter:grayscale(1);cursor:not-allowed;}
+    @media (max-width:680px){
+      .userPanel{left:82px;max-width:min(calc(100vw - 98px),360px);gap:6px;padding:6px 7px;}
+      .userName{max-width:94px;}
+      .saveStatus{max-width:118px;overflow:hidden;text-overflow:ellipsis;}
+      .miniAuthBtn{padding:6px 7px;font-size:10px;}
+    }
+
+    .bottom{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:7;display:flex;align-items:flex-end;justify-content:center;gap:8px;pointer-events:none;}
+    .upgradePanel{pointer-events:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:8px;max-width:760px;}
+    .upgrade{min-width:138px;box-shadow:none;background:rgba(255,255,255,.09);color:var(--text);border:1px solid rgba(255,255,255,.16);font-size:13px;padding:10px 11px;}
+    .upgrade:active{transform:scale(.98);box-shadow:none;}
+    .upgrade:disabled{opacity:.45;filter:grayscale(1);}
+
+    .tapHint{position:absolute;left:50%;bottom:calc(106px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:8;background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:8px 12px;color:#e8eeff;font-size:13px;white-space:nowrap;pointer-events:none;}
+    .inventoryOverlay{position:absolute;inset:0;z-index:18;display:grid;place-items:center;padding:18px;background:rgba(2,6,14,.62);backdrop-filter:blur(6px);pointer-events:auto;}
+    .inventoryPanel{width:min(96vw,640px);padding:16px;direction:rtl;text-align:right;}
+    .inventoryHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+    .inventoryHeader b{font-size:22px;}
+    .inventoryClose{width:40px;height:40px;border-radius:12px;padding:0;box-shadow:none;background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.18);}
+    .inventoryClose:active{transform:scale(.95);box-shadow:none;}
+    .inventoryGrid{min-height:220px;max-height:min(62vh,520px);overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(120,190,255,.65) rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));display:block;padding:14px;}
+    .inventoryGrid::-webkit-scrollbar{width:10px;}
+    .inventoryGrid::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:999px;}
+    .inventoryGrid::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(120,190,255,.95),rgba(88,173,255,.75));border-radius:999px;border:2px solid rgba(8,14,28,.55);}
+    .inventoryGrid::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,rgba(150,210,255,1),rgba(88,173,255,.88));}
+    .inventoryList{display:flex;flex-direction:column;gap:12px;padding-inline-end:4px;}
+    .inventorySlot{display:flex;align-items:stretch;gap:14px;min-height:126px;border-radius:20px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.11);}
+    .inventorySlot.locked{opacity:.94;}
+    .inventorySlot.active{outline:2px solid rgba(255,255,255,.14);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;}
+    .inventorySlotIconWrap{width:118px;flex:0 0 118px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .inventorySlotIcon{width:108px;height:108px;display:grid;place-items:center;font-size:31px;color:#fff;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.11);background-size:contain;background-position:center;background-repeat:no-repeat;}
+    .inventorySlotIcon.loadoutPreview{background-size:contain;background-position:center;background-repeat:no-repeat;background-color:rgba(255,255,255,.045);}
+    .inventoryRarityPill{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:950;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);white-space:nowrap;}
+    .inventorySlotBody{min-width:0;flex:1;display:flex;flex-direction:column;gap:10px;}
+    .inventorySlotTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+    .inventoryTitleArea{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px;}
+    .inventorySlotTitle{font-weight:950;font-size:18px;line-height:1.05;}
+    .inventorySlotMeta{font-size:12px;color:var(--muted);}
+    .inventorySlotDesc{font-size:12px;color:#d7e2ff;line-height:1.35;opacity:.92;}
+    .inventoryActionCol{min-width:92px;display:flex;flex-direction:column;align-items:stretch;gap:8px;}
+    .inventoryLockText{font-size:11px;text-align:center;color:var(--muted);font-weight:800;}
+    .inventoryStatsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;}
+    .inventoryStat{padding:8px 9px;border-radius:14px;background:rgba(8,14,28,.46);border:1px solid rgba(255,255,255,.08);min-height:56px;display:flex;flex-direction:column;justify-content:center;gap:3px;}
+    .inventoryStatLabel{font-size:10px;color:var(--muted);font-weight:800;line-height:1;}
+    .inventoryStatValue{font-size:15px;color:#fff;font-weight:950;line-height:1.1;}
+    .inventoryEquipBtn{min-width:86px;padding:9px 10px;border-radius:12px;box-shadow:none;background:rgba(255,255,255,.10);color:var(--text);border:1px solid rgba(255,255,255,.16);font-size:12px;}
+    .inventoryEquipBtn:active{transform:scale(.96);box-shadow:none;}
+    .inventoryEquipBtn.equipped{background:rgba(68,240,141,.16);border-color:rgba(68,240,141,.40);color:#9dffbe;}
+    .inventoryEquipBtn.locked{opacity:.58;filter:grayscale(1);background:rgba(255,255,255,.05);}
+    .inventoryEquipBtn:disabled{cursor:not-allowed;}
+    .rarityText{font-weight:950;}
+
+    .inventorySlot.rarity-common{border-color:rgba(201,215,242,.22);}
+    .inventorySlot.rarity-rare{border-color:rgba(88,173,255,.42);background:linear-gradient(180deg,rgba(88,173,255,.10),rgba(255,255,255,.04));}
+    .inventorySlot.rarity-epic{border-color:rgba(176,108,255,.48);background:linear-gradient(180deg,rgba(176,108,255,.12),rgba(255,255,255,.04));}
+    .inventorySlot.rarity-legendary{border-color:rgba(255,209,102,.58);background:linear-gradient(180deg,rgba(255,209,102,.16),rgba(255,255,255,.04));}
+    .rarity-common .rarityText,.inventoryRarityPill.rarity-common{color:#c9d7f2;}
+    .rarity-rare .rarityText,.inventoryRarityPill.rarity-rare{color:#58adff;}
+    .rarity-epic .rarityText,.inventoryRarityPill.rarity-epic{color:#b06cff;}
+    .rarity-legendary .rarityText,.inventoryRarityPill.rarity-legendary{color:#ffd166;}
+
+    .sideMenuBtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:9;width:58px;min-height:76px;border-radius:20px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(180deg,rgba(255,224,138,.98),rgba(249,173,34,.94));box-shadow:0 8px 0 #9a6304,0 16px 24px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25);color:#211400;font-weight:950;pointer-events:auto;}
+    .sideMenuBtn span:first-child{font-size:24px;line-height:1}.sideMenuBtn span:last-child{font-size:11px;line-height:1.05}.sideMenuBtn:active{transform:translateY(calc(-50% + 5px));box-shadow:0 3px 0 #9a6304,0 8px 16px rgba(0,0,0,.22)}
+    .menuOverlay{position:absolute;inset:0;z-index:19;display:grid;place-items:center;padding:18px;background:rgba(2,6,14,.66);backdrop-filter:blur(7px);pointer-events:auto;direction:rtl;}
+    .mainMenuPanel{width:min(96vw,720px);max-height:min(86vh,760px);overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(255,209,102,.74) rgba(255,255,255,.06);padding:16px;text-align:right;}
+    .mainMenuPanel::-webkit-scrollbar{width:10px}.mainMenuPanel::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:999px}.mainMenuPanel::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(255,224,138,.98),rgba(249,173,34,.88));border-radius:999px;border:2px solid rgba(8,14,28,.55)}
+    .menuHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.menuTitle{display:flex;align-items:center;gap:10px;font-weight:950;font-size:23px}.menuEmoji{width:42px;height:42px;border-radius:15px;display:grid;place-items:center;background:rgba(255,209,102,.13);border:1px solid rgba(255,209,102,.35);font-size:24px}.menuClose{width:40px;height:40px;border-radius:12px;padding:0;box-shadow:none;background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.18)}
+    .menuPauseNote{margin:-4px 0 12px;color:#9dffbe;font-size:12px;font-weight:850}.giftCard{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:20px;padding:12px 14px;background:linear-gradient(135deg,rgba(255,209,102,.20),rgba(88,173,255,.12));border:1px solid rgba(255,209,102,.35)}.giftCard b{font-size:17px}.giftCard span{font-size:12px;color:#dbe4ff}
+    .menuSection{margin-top:12px}.menuSectionTitle{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:950;margin:0 0 8px}.bannerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.shopBanner{min-height:92px;border-radius:20px;padding:12px;background:linear-gradient(135deg,rgba(88,173,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.13);position:relative;overflow:hidden}.shopBanner b{display:block;font-size:16px;margin-bottom:4px}.shopBanner span{font-size:12px;color:var(--muted);line-height:1.35}.shopBanner.realMoney{background:linear-gradient(135deg,rgba(68,240,141,.17),rgba(255,255,255,.04));border-color:rgba(68,240,141,.28)}.shopBanner.event{background:linear-gradient(135deg,rgba(176,108,255,.18),rgba(255,255,255,.04));border-color:rgba(176,108,255,.33)}
+    .questList{display:grid;grid-template-columns:1fr;gap:8px}.questRow{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:16px;padding:11px 12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10)}.questText{display:flex;flex-direction:column;gap:3px;min-width:0}.questText b{font-size:14px}.questText span{font-size:11px;color:var(--muted)}.questReward{white-space:nowrap;border-radius:999px;padding:6px 9px;background:rgba(255,209,102,.13);border:1px solid rgba(255,209,102,.28);color:#ffd166;font-size:11px;font-weight:950}
+    .gameModesBox{border-radius:22px;padding:14px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(88,173,255,.07));border:1px solid rgba(255,255,255,.13)}.gameModeLocked{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:18px;padding:12px;background:rgba(0,0,0,.18);border:1px dashed rgba(255,255,255,.18)}.gameModeLocked b{font-size:16px}.gameModeLocked span{font-size:12px;color:var(--muted)}.comingSoon{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-weight:950;font-size:11px;color:#e8eeff;white-space:nowrap}.pauseBadge{position:absolute;left:50%;top:86px;transform:translateX(-50%);z-index:17;border-radius:999px;padding:7px 12px;background:rgba(0,0,0,.44);border:1px solid rgba(255,255,255,.15);font-weight:950;font-size:12px;color:#9dffbe;pointer-events:none}
+    @media (max-width:560px){.sideMenuBtn{right:7px;width:51px;min-height:66px}.bannerGrid{grid-template-columns:1fr}.menuTopButtons{grid-template-columns:1fr;top:-13px}.missionTabs{grid-template-columns:1fr}.mainMenuPanel{width:calc(100vw - 20px);padding:13px}.menuTitle{font-size:20px}.questRow{align-items:flex-start;flex-direction:column}.questReward{align-self:flex-start}.menuNavBtns{grid-template-columns:1fr}.categoryTitleBtn{align-items:flex-start;flex-direction:column}.gameModeButtonTop{align-items:flex-start;flex-direction:column}}
+
+
+    .categoryStack{display:flex;flex-direction:column;gap:10px}
+    .categoryBlock{border-radius:20px;padding:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10)}
+    .categoryTitleBtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:16px;padding:11px 13px;margin:0 0 9px;background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(88,173,255,.10));border:1px solid rgba(255,209,102,.25);color:#fff;box-shadow:none;text-align:right}
+    .categoryTitleBtn:active{transform:scale(.98);box-shadow:none}
+    .categoryTitleBtn .catMain{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:950}
+    .categoryTitleBtn .catTag{font-size:11px;color:#ffd166;background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.22);padding:4px 8px;border-radius:999px;white-space:nowrap}
+    .shopCategoryCard{border-radius:16px;padding:11px 12px;background:linear-gradient(135deg,rgba(88,173,255,.13),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.10)}
+    .shopCategoryCard span{font-size:12px;color:var(--muted);line-height:1.35}
+    .menuNavBtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+    .menuNavBtn{min-height:58px;border-radius:18px;padding:10px 12px;box-shadow:none;background:linear-gradient(135deg,rgba(88,173,255,.18),rgba(255,255,255,.06));border:1px solid rgba(88,173,255,.28);color:#fff;text-align:right}
+    .menuNavBtn:active{transform:scale(.98);box-shadow:none}
+    .missionCategory{border-radius:18px;padding:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10)}
+    .missionCategory + .missionCategory{margin-top:9px}
+    .missionCategory .questRow{margin-top:8px}
+    .gameModeButton{width:100%;border-radius:18px;box-shadow:none;color:#fff;background:linear-gradient(135deg,rgba(176,108,255,.20),rgba(88,173,255,.10));border:1px solid rgba(176,108,255,.32);padding:12px 14px;text-align:right}
+    .gameModeButton:active{transform:scale(.98);box-shadow:none}
+    .gameModeButtonTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .lockPill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;background:rgba(0,0,0,.20);border:1px dashed rgba(255,255,255,.22);font-size:11px;font-weight:950;color:#ffd166;white-space:nowrap}
+
+
+    .menuTopButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 14px;position:sticky;top:-16px;z-index:2;padding:8px 0;background:linear-gradient(180deg,rgba(9,16,31,.98),rgba(9,16,31,.80));backdrop-filter:blur(8px)}
+    .menuTopBtn{min-height:58px;border-radius:18px;padding:10px 12px;box-shadow:none;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.13);color:#fff;text-align:right;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px}
+    .menuTopBtn b{font-size:13px;line-height:1.1}.menuTopBtn span{font-size:10px;color:var(--muted);line-height:1.15}.menuTopBtn.special{background:linear-gradient(135deg,rgba(88,173,255,.18),rgba(176,108,255,.10));border-color:rgba(88,173,255,.30)}
+    .menuTopBtn.active{background:linear-gradient(135deg,rgba(255,209,102,.24),rgba(88,173,255,.14));border-color:rgba(255,209,102,.55);box-shadow:0 0 0 1px rgba(255,209,102,.16) inset}.menuTopBtn:active{transform:scale(.98);box-shadow:none}
+    .menuPanelArea{border-radius:22px;padding:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10)}
+
+    .questInfo{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}.questProgressLine{font-size:11px;color:#9fb2dd;font-weight:800}.questProgressBar{height:8px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.10);overflow:hidden}.questProgressFill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#58adff,#ffd166);transition:width .18s ease}.questActions{display:flex;flex-direction:column;align-items:flex-end;gap:7px}.questClaimBtn{min-width:88px;border-radius:13px;padding:8px 10px;box-shadow:none;border:1px solid rgba(255,209,102,.35);background:linear-gradient(180deg,rgba(255,224,138,.96),rgba(249,173,34,.90));color:#211400;font-size:12px;font-weight:950}.questClaimBtn:disabled{opacity:.55;filter:grayscale(.65);background:rgba(255,255,255,.08);color:#dbe4ff;border-color:rgba(255,255,255,.14)}.questDone{color:#9dffbe}.questLockedText{font-size:11px;color:#ffb6c1;font-weight:850}.menuPageHint{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.35}.emptySoon{border-radius:18px;padding:14px;background:rgba(255,255,255,.045);border:1px dashed rgba(255,255,255,.16);color:#dbe4ff;font-weight:850}
+    .menuPanelView{animation:menuPanelIn .14s ease-out}.panelBigTitle{font-weight:950;font-size:20px;margin:0 0 10px;display:flex;align-items:center;gap:8px}.missionTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.missionTab{border-radius:15px;padding:10px 8px;box-shadow:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);color:#fff;font-size:13px}.missionTab.active{background:linear-gradient(135deg,rgba(255,209,102,.22),rgba(88,173,255,.12));border-color:rgba(255,209,102,.48)}.missionPanel{display:grid;gap:8px}@keyframes menuPanelIn{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+    .damageText{position:absolute;z-index:10;pointer-events:none;font-weight:950;text-shadow:0 3px 9px #000;animation:floatUp .75s ease-out forwards;}
+    @keyframes floatUp{from{opacity:1;transform:translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate(-50%,-145%) scale(1.32)}}
+
+    @media(max-width:520px){
+      .hudTop{left:101px;right:8px;gap:6px;}
+      .stats{min-width:calc(100vw - 221px);padding:8px 8px;}
+      .name{font-size:14px}.small{font-size:11px}.enemyPanel{min-width:96px;padding:8px 7px}.enemyPanel b{font-size:16px}
+      .iconStack{left:8px;gap:7px}.iconCard{width:82px;min-height:73px;padding:6px 5px}.iconBubble{width:39px;height:39px;font-size:23px}.iconTitle{font-size:11px}.iconSub{font-size:9px}.inventoryPanel{width:calc(100vw - 20px);}.inventorySlot{padding:12px 10px;gap:10px;flex-direction:column}.inventorySlotIconWrap{width:100%;flex:0 0 auto;flex-direction:row;justify-content:space-between;align-items:center}.inventorySlotIcon{width:52px;height:52px;font-size:25px}.inventorySlotTop{flex-direction:column;align-items:stretch}.inventoryActionCol{min-width:0;flex-direction:row;align-items:center;justify-content:space-between}.inventorySlotTitle{font-size:16px}.inventoryStatsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.inventoryEquipBtn{min-width:78px;padding:8px 10px}
+      .centerMsg h1{font-size:24px}.centerMsg{padding:16px}
+      .upgrade{min-width:118px;font-size:12px;padding:9px 8px}.tapHint{font-size:12px;bottom:calc(112px + env(safe-area-inset-bottom,0px));}
+    }
+  
+    .currencyRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .gemCoin{background:linear-gradient(180deg,rgba(87,189,255,.22),rgba(87,189,255,.10));color:#97d6ff;border-color:rgba(87,189,255,.28)}
+
+    .summonShopGrid{display:grid;grid-template-columns:1fr;gap:16px}
+    .summonCard{border-radius:24px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:12px;overflow:hidden}
+    .summonCard.summonWeapons{box-shadow:0 0 0 1px rgba(88,173,255,.12) inset}
+    .summonCard.summonArmors{box-shadow:0 0 0 1px rgba(255,94,94,.11) inset}
+    .summonImgWrap{width:100%;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.18)}
+    .summonBannerImg{display:block;width:100%;height:auto;min-height:260px;object-fit:cover;object-position:center top}
+    .summonCardText b{display:block;font-size:20px;margin-bottom:5px}.summonCardText span{font-size:12px;color:var(--muted);line-height:1.5}
+    .summonButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .summonOpenBtn{position:relative;border-radius:18px;padding:14px 12px;overflow:hidden;border:1px solid rgba(255,255,255,.16);background:linear-gradient(180deg,rgba(27,44,86,.96),rgba(9,15,31,.96));color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.25),0 0 24px rgba(88,173,255,.16) inset;min-height:74px;display:flex;align-items:center;justify-content:center}
+    .summonOpenBtn img{display:none}
+    .summonOpenBtn span{position:relative;z-index:1;font-size:18px;font-weight:950;text-shadow:0 3px 12px rgba(0,0,0,.55);padding:10px 12px;text-align:center;line-height:1.15}
+    .summonOpenBtn.blue{background:linear-gradient(180deg,#2056a0,#0b1b38);border-color:rgba(103,195,255,.42)}
+    .summonOpenBtn.red{background:linear-gradient(180deg,#7a2630,#2a0c14);border-color:rgba(255,119,119,.42)}
+    .summonOpenBtn:active{transform:scale(.985);box-shadow:none}
+
+    .crateOverlay{position:absolute;inset:0;z-index:24;display:grid;place-items:center;padding:16px;background:rgba(5,8,18,.74);backdrop-filter:blur(10px)}
+    .cratePanel{width:min(96vw,760px);max-height:min(88vh,820px);overflow-y:auto;padding:16px 16px 18px;position:relative}
+    .crateHead{padding-left:40px;margin-bottom:10px}.crateCloseBtn{position:absolute;left:14px;top:14px}
+    .crateVisualArea{position:relative;border-radius:24px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);padding:12px;display:grid;place-items:center;min-height:240px;margin-bottom:12px}
+    .crateBannerMain{display:block;width:100%;max-height:340px;object-fit:cover;object-position:center top;border-radius:18px;filter:saturate(1.04)}
+    .crateChestMain{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:min(40vw,230px);max-width:230px;filter:drop-shadow(0 12px 32px rgba(0,0,0,.45));animation:crateBob 1.25s ease-in-out infinite}
+    .crateLegendaryGlow,.crateSparkles{position:absolute;pointer-events:none}.crateLegendaryGlow{inset:10px;width:calc(100% - 20px);height:calc(100% - 20px);object-fit:cover;opacity:.68}.crateSparkles{inset:0;width:100%;height:100%;object-fit:cover;opacity:.75;mix-blend-mode:screen}
+    .crateSpinText{font-weight:950;font-size:18px;text-align:center;margin:4px 0 12px}
+    .crateResultsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .crateResultCard{border-radius:18px;padding:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);display:flex;flex-direction:column;gap:6px}
+    .crateResultCard.legendary{border-color:rgba(255,209,102,.48);background:linear-gradient(180deg,rgba(255,209,102,.12),rgba(255,255,255,.04))}
+    .crateResultCard.epic{border-color:rgba(176,108,255,.42);background:linear-gradient(180deg,rgba(176,108,255,.10),rgba(255,255,255,.04))}
+    .crateResultCard.rare{border-color:rgba(88,173,255,.42);background:linear-gradient(180deg,rgba(88,173,255,.08),rgba(255,255,255,.04))}
+    .crateResultTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .crateResultName{font-size:16px;font-weight:950}.crateResultMeta{font-size:11px;color:var(--muted)}
+    .crateTag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:900;white-space:nowrap}
+    .crateResultDesc{font-size:12px;color:#dfe6ff;line-height:1.4}
+    .crateDup{font-size:12px;font-weight:900;color:#ffd166}
+    @keyframes crateBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+
+    @media(max-width:560px){
+      .summonButtons{grid-template-columns:1fr}
+      .summonBannerImg{min-height:200px}
+      .crateChestMain{width:min(54vw,190px)}
+      .crateResultsGrid{grid-template-columns:1fr}
+      .summonOpenBtn{min-height:80px}
+      .summonOpenBtn span{font-size:17px}
+    }
+
+
+    /* ===== גרסת טלפון ===== */
+    .phoneControls{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:calc(92px + env(safe-area-inset-bottom,0px));
+      z-index:11;
+      display:none;
+      align-items:flex-end;
+      justify-content:space-between;
+      padding:0 14px;
+      pointer-events:none;
+      direction:ltr;
+    }
+    .phoneRoundBtn{
+      pointer-events:auto;
+      width:86px;
+      height:86px;
+      border-radius:50%;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:2px;
+      font-size:28px;
+      line-height:1;
+      color:#fff;
+      border:2px solid rgba(255,255,255,.22);
+      box-shadow:0 8px 0 rgba(0,0,0,.32),0 16px 26px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.24);
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:manipulation;
+    }
+    .phoneRoundBtn small{font-size:11px;font-weight:950;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+    #phoneAttackBtn{background:radial-gradient(circle at 35% 25%,#fff0a8,#ffb12b 55%,#d85916 100%);}
+    #phoneHealBtn{background:radial-gradient(circle at 35% 25%,#ffc8d4,#ff5275 55%,#b71439 100%);}
+    .phoneRoundBtn:active{transform:translateY(5px) scale(.97);box-shadow:0 3px 0 rgba(0,0,0,.35),0 9px 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.24)}
+    .phoneLandscapeNote{display:none;position:absolute;left:50%;top:calc(6px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:12;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;color:#dbe4ff;pointer-events:none;white-space:nowrap;}
+    @media (pointer:coarse), (max-width:760px){
+      .phoneControls{display:flex;}
+      .phoneLandscapeNote{display:block;}
+      .hudTop{top:calc(7px + env(safe-area-inset-top,0px));right:7px;left:92px;gap:6px;}
+      .stats{min-width:min(64vw,245px);padding:7px 8px;}
+      .name{font-size:14px}.coin{font-size:13px}.small{font-size:10px}.bar{height:9px;margin-top:4px}
+      .enemyPanel{min-width:92px;padding:7px 8px}.enemyPanel b{font-size:15px;}
+      .iconStack{top:calc(7px + env(safe-area-inset-top,0px));left:7px;gap:6px;}
+      .iconCard{width:74px;min-height:66px;border-radius:15px;padding:5px;}
+      .iconBubble{width:36px;height:36px;border-radius:13px;font-size:21px;margin-bottom:2px;}
+      .iconTitle{font-size:10px}.iconSub{font-size:9px;}
+      .sideMenuBtn{right:7px;width:52px;min-height:64px;border-radius:18px;}
+      .bottom{left:8px;right:8px;bottom:calc(7px + env(safe-area-inset-bottom,0px));}
+      .upgradePanel{gap:6px;padding:6px;max-width:calc(100vw - 16px);}
+      .upgrade{min-width:31vw;max-width:32vw;font-size:11px;padding:8px 6px;border-radius:13px;}
+      .tapHint{bottom:calc(178px + env(safe-area-inset-bottom,0px));font-size:12px;padding:7px 10px;}
+      .centerMsg{width:calc(100vw - 26px);padding:15px;border-radius:22px;}
+      .centerMsg h1{font-size:25px;}
+      .startHeroPreview{width:min(50vw,165px);max-height:185px;}
+      .inventoryPanel,.mainMenuPanel{width:calc(100vw - 16px);max-height:calc(100dvh - 24px);padding:12px;}
+      .inventoryGrid{max-height:calc(100dvh - 145px);padding:10px;}
+      .inventorySlot{gap:9px;min-height:108px;padding:10px;border-radius:17px;}
+      .inventorySlotIconWrap{width:88px;flex-basis:88px;}.inventorySlotIcon{width:82px;height:82px;border-radius:16px;}
+      .inventorySlotTitle{font-size:15px}.inventorySlotDesc{font-size:11px}.inventoryStat{min-height:48px;padding:6px}.inventoryStatValue{font-size:13px}.inventoryEquipBtn{font-size:11px;min-width:76px;padding:8px 7px;}
+    }
+    @media (max-height:620px) and (orientation:landscape){
+      .phoneControls{bottom:calc(70px + env(safe-area-inset-bottom,0px));}
+      .phoneRoundBtn{width:72px;height:72px;font-size:24px;}
+      .tapHint{display:none!important;}
+      .bottom{transform:scale(.86);transform-origin:bottom center;}
+    }
+
+  
+    /* clean-v2 anti flicker */
+    canvas,img{backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+    button{touch-action:manipulation;}
+  </style>
+</head>
+<body>
+  <div id="gameWrap">
+    <canvas id="game"></canvas>
+
+    <div class="userPanel card" id="userPanel" aria-label="משתמש ושמירה">
+      <button class="userToggleBtn" id="userToggleBtn" type="button" aria-label="הסתר משתמש">‹</button>
+      <div class="userAvatar" id="userAvatar">?</div>
+      <div class="userInfo">
+        <div class="userName" id="userName">אורח</div>
+        <div class="saveStatus" id="saveStatus">שמירה מקומית מוכנה</div>
+      </div>
+      <div class="authButtons">
+        <button class="miniAuthBtn" id="guestLoginBtn" type="button">אורח</button>
+        <button class="miniAuthBtn google" id="googleLoginBtn" type="button">Google</button>
+        <button class="miniAuthBtn" id="logoutBtn" type="button">יציאה</button>
+      </div>
+    </div>
+
+    <div class="iconStack" aria-label="ציוד התחלתי של בן">
+      <div class="iconCard">
+        <div class="iconBubble" id="heroIcon">🧑‍🚒</div>
+        <div class="iconTitle">בן</div>
+        <div class="iconSub" id="heroSub">דמות התחלתית</div>
+      </div>
+      <div class="iconCard inventoryTrigger" id="weaponCard" data-inventory="weapon" role="button" tabindex="0" aria-label="פתח אינבטורי נשקים">
+        <div class="iconBubble" id="weaponIcon">🪵</div>
+        <div class="iconTitle" id="weaponTitle">מקל עץ</div>
+        <div class="iconSub" id="weaponSub">נשק התחלתי</div>
+      </div>
+      <div class="iconCard inventoryTrigger" id="armorCard" data-inventory="armor" role="button" tabindex="0" aria-label="פתח אינבטורי ארמור">
+        <div class="iconBubble" id="armorIcon">🛡️</div>
+        <div class="iconTitle" id="armorTitle">ארמור התחלתי</div>
+        <div class="iconSub" id="armorSub">הגנה בסיסית</div>
+      </div>
+    </div>
+
+    <button class="sideMenuBtn" id="sideMenuBtn" type="button" aria-label="פתח תפריט ראשי"><span>📜</span><span>מניו</span></button>
+    <div class="pauseBadge hidden" id="pauseBadge">⏸ המשחק מושהה</div>
+
+    <div class="hudTop">
+      <div class="card stats">
+        <div class="nameRow"><div class="name">בן</div><div class="currencyRow"><div class="coin" id="coins">🪙 0</div><div class="coin gemCoin" id="gems">💎 0</div></div></div>
+        <div class="small" id="gearText">מקל עץ · ארמור התחלתי</div>
+        <div class="bar"><div class="fill" id="hpFill"></div></div>
+        <div class="small" id="hpText">חיים: 100/100</div>
+        <div class="bar"><div class="fill xpFill" id="xpFill"></div></div>
+        <div class="small" id="levelText">רמה 1 · XP 0/100</div>
+      </div>
+      <div class="card enemyPanel">
+        <div class="small">אויב מולך</div>
+        <b id="enemyName">---</b>
+        <div class="small" id="stageText">World 1 · Round 1/25</div>
+      </div>
+    </div>
+
+    <div class="card centerMsg" id="startScreen" onclick="window.BEN_START_GAME && window.BEN_START_GAME(event)" ontouchstart="window.BEN_START_GAME && window.BEN_START_GAME(event)">
+      <h1>בן נגד מפלצות וחייזרים</h1>
+      <img src="" class="startHeroPreview" alt="בן - דמות המשחק" />
+      <p>אתה מתחיל עם <b>בן</b>, <b>מקל עץ</b> ו־<b>ארמור התחלתי</b>.</p>
+      <p>כל פעם מופיע אויב אחד מולך. לחץ עליו במסך כדי שבן יתקוף עם המקל.</p>
+      <button id="startBtn" type="button" onclick="window.BEN_START_GAME && window.BEN_START_GAME(event)" ontouchstart="window.BEN_START_GAME && window.BEN_START_GAME(event)">התחל משחק</button>
+    </div>
+
+    <div class="tapHint hidden" id="tapHint">לחץ על האויב או על כפתור ⚔️ כדי לתקוף</div>
+
+    <div class="phoneLandscapeNote">גרסת טלפון · מומלץ לסובב לרוחב אם המסך צפוף</div>
+    <div class="phoneControls" id="phoneControls" aria-label="פקדים לטלפון">
+      <button class="phoneRoundBtn" id="phoneHealBtn" type="button" aria-label="ריפוי">❤️<small>ריפוי</small></button>
+      <button class="phoneRoundBtn" id="phoneAttackBtn" type="button" aria-label="תקיפה">⚔️<small>תקיפה</small></button>
+    </div>
+
+    <div class="inventoryOverlay hidden" id="inventoryOverlay" aria-hidden="true">
+      <div class="card inventoryPanel" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        <div class="inventoryHeader">
+          <div>
+            <b id="inventoryTitle">אינבטורי</b>
+            <div class="small" id="inventorySub">כרגע אין פריטים</div>
+          </div>
+          <button class="inventoryClose" id="inventoryClose" type="button" aria-label="סגור אינבטורי">✕</button>
+        </div>
+        <div class="inventoryGrid">
+          <div class="inventoryList" id="inventoryList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="card upgradePanel">
+        <button class="upgrade" id="weaponBtn" type="button">שדרג מקל<br><span class="small">עלות: 30</span></button>
+        <button class="upgrade" id="armorBtn" type="button">שדרג ארמור<br><span class="small">עלות: 35</span></button>
+        <button class="upgrade" id="healBtn" type="button">ריפוי<br><span class="small">עלות: 20</span></button>
+      </div>
+    </div>
+  </div>
+
+
+    <div class="menuOverlay hidden" id="mainMenuOverlay" aria-hidden="true">
+      <div class="card mainMenuPanel" role="dialog" aria-modal="true" aria-labelledby="mainMenuTitle" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+        <div class="menuHeader">
+          <div class="menuTitle" id="mainMenuTitle"><span class="menuEmoji" id="mainMenuEmoji">📜</span><span id="mainMenuTitleText">מניו ראשי</span></div>
+          <button class="menuClose" id="mainMenuClose" type="button">✕</button>
+        </div>
+        <div class="menuPauseNote">⏸ כל עוד מניו פתוח המשחק נעצר.</div>
+
+        <div class="menuPageHint">לחץ על כפתור קטגוריה למעלה כדי לפתוח את הדף שלו.</div>
+        <div class="menuTopButtons" aria-label="כפתורי קטגוריות ראשיים">
+          <button class="menuTopBtn active" type="button" data-menu-tab="gifts"><b>🎁 גיפטים / הודעות</b><span>מתנות ועדכונים</span></button>
+          <button class="menuTopBtn" type="button" data-menu-tab="banners"><b>🎰 באנרים לפתיחה</b><span>נשקים / ארמורים</span></button>
+          <button class="menuTopBtn" type="button" data-menu-tab="events"><b>🎉 איוונטים</b><span>זמן מוגבל</span></button>
+          <button class="menuTopBtn" type="button" data-menu-tab="eventQuests"><b>✅ משימות איוונט</b><span>פרסים מיוחדים</span></button>
+          <button class="menuTopBtn" type="button" data-menu-tab="playerQuests"><b>🧑‍🚀 משימות בן</b><span>משימות של הדמות בן</span></button>
+          <button class="menuTopBtn" type="button" data-menu-tab="realShop"><b>💳 שופ כסף אמיתי</b><span>COMING SOON</span></button>
+          <button class="menuTopBtn special" type="button" data-menu-tab="missions"><b>📌 משימות</b><span>Daily · Monthly · General</span></button>
+          <button class="menuTopBtn special" type="button" data-menu-tab="gamemodes"><b>🎮 GAMEMODES</b><span>🔒 COMING SOON</span></button>
+        </div>
+
+        <div class="menuPanelArea">
+          <section class="menuPanelView" data-menu-panel="gifts">
+            <div class="panelBigTitle">🎁 גיפטים / הודעות משחק</div>
+            <div class="giftCard">
+              <div><b>מתנות יומיות והודעות משחק</b><br><span>כאן יהיו מתנות יומיות, הודעות עדכון, קודים ופרסים מיוחדים.</span></div>
+              <div class="questReward">בקרוב</div>
+            </div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="banners">
+            <div class="panelBigTitle">🎰 באנרים לפתיחה</div>
+            <div class="menuPageHint">פתח באנרים גדולים עם תמונה מלאה. OPEN x1 עולה 100 יהלומים ו-OPEN x10 עולה 900 יהלומים.</div>
+            <div class="summonShopGrid">
+              <div class="summonCard summonWeapons">
+                <div class="summonImgWrap"><img class="summonBannerImg" src="" alt="באנר נשקים"></div>
+                <div class="summonCardText"><b>באנר נשקים כללים</b><span>כולל את כל הנשקים של בן: Common / Rare / Epic / Legendary.</span></div>
+                <div class="summonButtons">
+                  <button class="summonOpenBtn blue" type="button" data-open-banner="weapon" data-open-count="1"><img src="" alt="OPEN x1"><span>OPEN x1 · 💎100</span></button>
+                  <button class="summonOpenBtn blue" type="button" data-open-banner="weapon" data-open-count="10"><img src="" alt="OPEN x10"><span>OPEN x10 · 💎900</span></button>
+                </div>
+              </div>
+              <div class="summonCard summonArmors">
+                <div class="summonImgWrap"><img class="summonBannerImg" src="" alt="באנר ארמורים"></div>
+                <div class="summonCardText"><b>באנר ארמורים כללים</b><span>כולל את כל הארמורים של בן עם נדירויות שונות ושדרוגים לפי rarity.</span></div>
+                <div class="summonButtons">
+                  <button class="summonOpenBtn red" type="button" data-open-banner="armor" data-open-count="1"><img src="" alt="OPEN x1"><span>OPEN x1 · 💎100</span></button>
+                  <button class="summonOpenBtn red" type="button" data-open-banner="armor" data-open-count="10"><img src="" alt="OPEN x10"><span>OPEN x10 · 💎900</span></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="events">
+            <div class="panelBigTitle">🎉 איוונטים</div>
+            <div class="shopBanner event"><b>World 1 Event</b><span>איוונטים מיוחדים ופרסים לזמן מוגבל.</span></div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="eventQuests">
+            <div class="panelBigTitle">✅ משימות איוונט</div>
+            <div class="menuPageHint">כאן יהיו משימות איוונט. כשמשימה מושלמת — לחץ קבל פרס ותקבל כסף.</div>
+            <div class="questList" id="eventQuestList"></div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="playerQuests">
+            <div class="panelBigTitle">🧑‍🚀 משימות בן</div>
+            <div class="menuPageHint">אלה המשימות של הדמות שמשחקים איתה כרגע — כרגע בן הוא הדמות היחידה, אז אלו משימות בן.</div>
+            <div class="questList" id="playerQuestList"></div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="realShop">
+            <div class="panelBigTitle">💳 שופ כסף אמיתי</div>
+            <div class="shopBanner realMoney"><b>Premium Shop</b><span>חבילות מטבעות ופרימיום — COMING SOON.</span></div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="missions">
+            <div class="panelBigTitle">📌 משימות רגילות</div>
+            <div class="menuPageHint">זה דף המשימות הרגילות בלבד. כל כפתור למטה פותח את סוג המשימות שלו.</div>
+            <div class="missionTabs" aria-label="סוגי משימות">
+              <button class="missionTab active" type="button" data-mission-tab="daily">☀️ Daily</button>
+              <button class="missionTab" type="button" data-mission-tab="monthly">📅 Monthly</button>
+              <button class="missionTab" type="button" data-mission-tab="general">⭐ General</button>
+            </div>
+            <div class="missionPanel" data-mission-panel="daily"><div class="questList" id="dailyQuestList"></div></div>
+            <div class="missionPanel hidden" data-mission-panel="monthly"><div class="questList" id="monthlyQuestList"></div></div>
+            <div class="missionPanel hidden" data-mission-panel="general"><div class="questList" id="generalQuestList"></div></div>
+          </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="gamemodes">
+            <div class="panelBigTitle">🎮 GAMEMODES</div>
+            <button class="gameModeButton" type="button">
+              <div class="gameModeButtonTop"><b>מצבי משחק</b><span class="lockPill">🔒 נעול</span></div>
+              <div class="small">נפתח ברמה כללית 10 · הרמה הכללית שלך: <span id="menuGameLevel">1</span></div>
+              <div class="comingSoon">COMING SOON</div>
+            </button>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="crateOverlay hidden" id="crateOverlay" aria-hidden="true">
+      <div class="glass cratePanel">
+        <button class="menuClose crateCloseBtn" id="crateClose" type="button" aria-label="סגור">✕</button>
+        <div class="crateHead">
+          <div class="panelBigTitle" id="crateTitle">🎁 פתיחת קרייט</div>
+          <div class="small" id="crateSubTitle">המשחק מושהה בזמן פתיחה</div>
+        </div>
+        <div class="crateVisualArea" id="crateVisualArea">
+          <img class="crateBannerMain" id="crateBannerMain" src="" alt="">
+          <img class="crateChestMain" id="crateChestMain" src="" alt="">
+          <img class="crateLegendaryGlow hidden" id="crateLegendaryGlow" src="" alt="">
+          <img class="crateSparkles hidden" id="crateSparkles" src="" alt="">
+        </div>
+        <div class="crateSpinText" id="crateSpinText">פותח...</div>
+        <div class="crateResultsGrid" id="crateResultsGrid"></div>
+      </div>
+    </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('gameWrap');
+  const startScreen = document.getElementById('startScreen');
+  const startBtn = document.getElementById('startBtn');
+  const tapHint = document.getElementById('tapHint');
+  const userPanel = document.getElementById('userPanel');
+  const userToggleBtn = document.getElementById('userToggleBtn');
+  const userAvatar = document.getElementById('userAvatar');
+  const userNameEl = document.getElementById('userName');
+  const saveStatusEl = document.getElementById('saveStatus');
+  const guestLoginBtn = document.getElementById('guestLoginBtn');
+  const googleLoginBtn = document.getElementById('googleLoginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const coinsEl = document.getElementById('coins');
+  const hpFill = document.getElementById('hpFill');
+  const hpText = document.getElementById('hpText');
+  const xpFill = document.getElementById('xpFill');
+  const levelText = document.getElementById('levelText');
+  const enemyNameEl = document.getElementById('enemyName');
+  const stageText = document.getElementById('stageText');
+  const gearText = document.getElementById('gearText');
+
+  const weaponBtn = document.getElementById('weaponBtn');
+  const armorBtn = document.getElementById('armorBtn');
+  const healBtn = document.getElementById('healBtn');
+  const heroIconEl = document.getElementById('heroIcon');
+  const weaponIcon = document.getElementById('weaponIcon');
+  const weaponTitle = document.getElementById('weaponTitle');
+  const weaponSub = document.getElementById('weaponSub');
+  const armorIcon = document.getElementById('armorIcon');
+  const armorTitle = document.getElementById('armorTitle');
+  const armorSub = document.getElementById('armorSub');
+  const weaponCard = document.getElementById('weaponCard');
+  const armorCard = document.getElementById('armorCard');
+  const inventoryOverlay = document.getElementById('inventoryOverlay');
+  const inventoryTitle = document.getElementById('inventoryTitle');
+  const inventorySub = document.getElementById('inventorySub');
+  const inventoryClose = document.getElementById('inventoryClose');
+  const inventoryList = document.getElementById('inventoryList');
+  const sideMenuBtn = document.getElementById('sideMenuBtn');
+  const mainMenuOverlay = document.getElementById('mainMenuOverlay');
+  const mainMenuClose = document.getElementById('mainMenuClose');
+  const pauseBadge = document.getElementById('pauseBadge');
+  const menuGameLevel = document.getElementById('menuGameLevel');
+  const mainMenuEmoji = document.getElementById('mainMenuEmoji');
+  const mainMenuTitleText = document.getElementById('mainMenuTitleText');
+  const menuTabButtons = Array.from(document.querySelectorAll('[data-menu-tab]'));
+  const menuPanels = Array.from(document.querySelectorAll('[data-menu-panel]'));
+  const missionTabButtons = Array.from(document.querySelectorAll('[data-mission-tab]'));
+  const missionPanels = Array.from(document.querySelectorAll('[data-mission-panel]'));
+  const questListEls = {
+    event: document.getElementById('eventQuestList'),
+    player: document.getElementById('playerQuestList'),
+    daily: document.getElementById('dailyQuestList'),
+    monthly: document.getElementById('monthlyQuestList'),
+    general: document.getElementById('generalQuestList')
+  };
+
+  const gemsEl = document.getElementById('gems');
+  const SAVE_VERSION = 1;
+  const GOOGLE_CLIENT_ID = '665945520146-q6dh7ud9opbjl8nqrc72ddjccb8gcql9.apps.googleusercontent.com';
+  const GUEST_USER = { id:'guest', name:'אורח', picture:'' };
+  let currentUser = {...GUEST_USER};
+  let saveReady = false;
+  const crateOverlay = document.getElementById('crateOverlay');
+  const crateClose = document.getElementById('crateClose');
+  const crateTitle = document.getElementById('crateTitle');
+  const crateSubTitle = document.getElementById('crateSubTitle');
+  const crateBannerMain = document.getElementById('crateBannerMain');
+  const crateChestMain = document.getElementById('crateChestMain');
+  const crateLegendaryGlow = document.getElementById('crateLegendaryGlow');
+  const crateSparkles = document.getElementById('crateSparkles');
+  const crateSpinText = document.getElementById('crateSpinText');
+  const crateResultsGrid = document.getElementById('crateResultsGrid');
+
+  // גרפיקת בן החדשה: תמונה + ספרייט־שיט לאנימציית עמידה/תקיפה.
+  const HERO_ICON_DATA = `assets/images/img_000_0ff04aa7c4.webp`;
+  const WEAPON_ICON_DATA = `assets/images/img_001_3e876106c6.webp`;
+  const ARMOR_ICON_DATA = `assets/images/img_002_bf2347b949.webp`;
+
+  function applyArtBubble(el, dataUrl, extraClass=''){
+    if(!el) return;
+    el.classList.add('artBubble');
+    if(extraClass) el.classList.add(extraClass);
+    el.textContent = '';
+    el.style.backgroundImage = `url('${dataUrl}')`;
+  }
+
+  applyArtBubble(heroIconEl, HERO_ICON_DATA, 'heroArt');
+  applyArtBubble(weaponIcon, WEAPON_ICON_DATA);
+  applyArtBubble(armorIcon, ARMOR_ICON_DATA);
+
+  const rarityMeta = {
+    common: {label:'Common', className:'rarity-common', color:'#c9d7f2'},
+    rare: {label:'Rare', className:'rarity-rare', color:'#58adff'},
+    epic: {label:'Epic', className:'rarity-epic', color:'#b06cff'},
+    legendary: {label:'Legendary', className:'rarity-legendary', color:'#ffd166'}
+  };
+
+  const inventoryState = {
+    currentKind: 'weapon',
+    equippedWeapon: 'wood_stick',
+    equippedArmor: 'survivor_armor',
+    weaponLevels: { wood_stick: 1 },
+    armorLevels: { survivor_armor: 1 },
+    weapons: [
+      {id:'wood_stick', name:'מקל עץ', rarity:'common', icon:'', asset:'weapon', owned:true, hit:1, power:4, cooldown:.44, crit:.05, speed:1.8, desc:'נשק התחלתי פשוט ואמין של בן.'},
+      {id:'stone_hammer', name:'פטיש אבן', rarity:'common', icon:'🔨', owned:false, hit:2, power:8, cooldown:.48, crit:.07, speed:1.6, preview:'', sheet:'', desc:'פטיש כבד שמכה חזק אבל עדיין נעול.'},
+      {id:'hunter_spear', name:'חנית צייד', rarity:'common', icon:'🗡️', owned:false, hit:2, power:10, cooldown:.40, crit:.09, speed:2.0, preview:'', sheet:'', desc:'חנית מהירה לטווח קצר שעדיין נעולה.'},
+      {id:'iron_pipe', name:'צינור ברזל', rarity:'common', icon:'🔩', owned:false, hit:3, power:12, cooldown:.38, crit:.08, speed:2.1, preview:'', sheet:'', desc:'נשק קשוח שמוסיף כוח פגיעה.'},
+      {id:'bone_club', name:'אלת עצם', rarity:'rare', icon:'🦴', owned:false, hit:4, power:16, cooldown:.37, crit:.12, speed:2.3, preview:'', sheet:'', desc:'אלה נדירה מחוזקת בעצמות מפלצת.'},
+      {id:'shock_axe', name:'גרזן ברק', rarity:'rare', icon:'🪓', owned:false, hit:5, power:20, cooldown:.34, crit:.14, speed:2.6, preview:'', sheet:'', desc:'גרזן נדיר עם פגיעה מהירה וחדה.'},
+      {id:'scrap_sword', name:'חרב גרוטאות', rarity:'epic', icon:'⚔️', owned:false, hit:7, power:28, cooldown:.31, crit:.18, speed:3.0, preview:'', sheet:'', desc:'חרב אפית שבנויה מחלקי מתכת משודרגים.'},
+      {id:'reinforced_bone', name:'אלת עצם קרח', rarity:'epic', icon:'❄️', owned:false, hit:8, power:32, cooldown:.30, crit:.20, speed:3.2, preview:'assets/images/img_018_f3a2641bbd.png', sheet:'', desc:'אלה קפואה מעצם שמקפיאה אויבים ומכה מהר.'},
+      {id:'plasma_blade', name:'להב פלזמה', rarity:'legendary', icon:'✨', owned:false, hit:10, power:40, cooldown:.27, crit:.25, speed:3.6, preview:'', sheet:'', desc:'הנשק האגדי של בן נגד חייזרים ובוסים.'}
+    ],
+    armors: [
+      {id:'survivor_armor', name:'ארמור התחלתי', rarity:'common', icon:'', asset:'armor', owned:true, hp:0, defense:.12, shield:1, mobility:10, preview:'', sheet:'', desc:'השריון הבסיסי שבן מתחיל איתו.'},
+      {id:'iron_armor', name:'ארמור ברזל', rarity:'rare', icon:'🛡️', owned:false, hp:35, defense:.24, shield:2, mobility:8, preview:'', sheet:'', desc:'ארמור נדיר שמוסיף חיים והגנה.'},
+      {id:'alien_armor', name:'ארמור חייזרי', rarity:'epic', icon:'🛸', owned:false, hp:70, defense:.34, shield:4, mobility:7, preview:'', sheet:'', desc:'שריון אפי בטכנולוגיה חייזרית.'},
+      {id:'hero_armor', name:'ארמור גיבורים', rarity:'legendary', icon:'💎', owned:false, hp:120, defense:.46, shield:6, mobility:6, preview:'', sheet:'', desc:'הארמור האגדי והחזק ביותר של בן.'}
+    ]
+  };
+
+  function getItems(kind){
+    return kind === 'weapon' ? inventoryState.weapons : inventoryState.armors;
+  }
+
+  function getRarityMeta(rarity){
+    return rarityMeta[rarity] || rarityMeta.common;
+  }
+
+  const rarityMaxLevel = { common:10, rare:15, epic:25, legendary:35 };
+  function getMaxLevelForItem(item){ return rarityMaxLevel[item?.rarity] || 10; }
+  function getItemLevel(kind, item){ const bag = kind === 'weapon' ? inventoryState.weaponLevels : inventoryState.armorLevels; if(!item) return 1; if(!bag[item.id]) bag[item.id] = 1; return bag[item.id]; }
+  function setItemLevel(kind, item, level){ const bag = kind === 'weapon' ? inventoryState.weaponLevels : inventoryState.armorLevels; bag[item.id] = level; }
+  function getEquippedLevel(kind){ return getItemLevel(kind, getEquippedItem(kind)); }
+
+  function getEquippedItem(kind){
+    const items = getItems(kind);
+    const id = kind === 'weapon' ? inventoryState.equippedWeapon : inventoryState.equippedArmor;
+    return items.find(item => item.id === id) || items[0];
+  }
+
+  function getEquippedWeapon(){ return getEquippedItem('weapon'); }
+  function getEquippedArmor(){ return getEquippedItem('armor'); }
+  function getWeaponName(){ return getEquippedWeapon().name; }
+  function getArmorName(){ return getEquippedArmor().name; }
+
+
+  function buildStatChip(label, value){
+    return `<div class="inventoryStat"><div class="inventoryStatLabel">${label}</div><div class="inventoryStatValue">${value}</div></div>`;
+  }
+
+  function buildItemStatsMarkup(kind, item){
+    const level = getItemLevel(kind, item);
+    const maxLevel = getMaxLevelForItem(item);
+    const stats = kind === 'weapon'
+      ? [['לבל', level + '/' + maxLevel], ['מכה', item.hit], ['דמג', '+' + item.power], ['קריט', Math.round(item.crit * 100) + '%'], ['קולדאון', item.cooldown.toFixed(2) + 'ש׳'], ['מהירות', item.speed.toFixed(1)]]
+      : [['לבל', level + '/' + maxLevel], ['חיים', '+' + item.hp], ['הגנה', Math.round(item.defense * 100) + '%'], ['ספיגה', '+' + item.shield], ['ניידות', item.mobility + '/10']];
+    return stats.map(([label, value]) => buildStatChip(label, value)).join('');
+  }
+
+
+  function getSelectedFullPreview(){
+    const armor = getEquippedArmor();
+    const weapon = getEquippedWeapon();
+    if(!armor || !weapon) return null;
+    return FULL_LOADOUT_ASSETS[armor.id] && FULL_LOADOUT_ASSETS[armor.id][weapon.id] ? FULL_LOADOUT_ASSETS[armor.id][weapon.id] : null;
+  }
+
+  function setGearBubble(el, item, fallbackData){
+    if(!el || !item) return;
+    let preview = item.preview || '';
+    // when full loadout exists, use it as the live side-card art so weapon+armor matches what is equipped.
+    const fullPreview = getSelectedFullPreview();
+    if(el === weaponIcon && fullPreview) preview = fullPreview;
+    if(preview || fallbackData){
+      el.classList.add('artBubble');
+      el.textContent = '';
+      el.style.backgroundImage = `url('${preview || fallbackData}')`;
+    }else{
+      el.classList.remove('artBubble');
+      el.style.backgroundImage = '';
+      el.textContent = item.icon || '✦';
+    }
+  }
+
+  function applyEquipmentStats(fullHeal=false){
+    const oldPct = player.maxHp > 0 ? clamp(player.hp / player.maxHp, 0, 1) : 1;
+    const weapon = getEquippedWeapon();
+    const armor = getEquippedArmor();
+    const armorLevel = getEquippedLevel('armor');
+    const weaponLevel = getEquippedLevel('weapon');
+    player.armorLevel = armorLevel;
+    player.weaponLevel = weaponLevel;
+    player.maxHp = Math.round(player.baseMaxHp + armor.hp + (armorLevel - 1) * 12);
+    player.damage = Math.round(player.baseDamage + weapon.power + (weaponLevel - 1) * 5 + (player.level - 1) * 3);
+    if(fullHeal){
+      player.hp = player.maxHp;
+    }else{
+      player.hp = clamp(Math.round(player.maxHp * oldPct), 1, player.maxHp);
+    }
+  }
+
+  function buildInventoryMarkup(kind){
+    const isWeapon = kind === 'weapon';
+    const equippedId = isWeapon ? inventoryState.equippedWeapon : inventoryState.equippedArmor;
+    const fallbackData = isWeapon ? WEAPON_ICON_DATA : ARMOR_ICON_DATA;
+    return getItems(kind).map(item => {
+      const rarity = getRarityMeta(item.rarity);
+      const equipped = item.id === equippedId;
+      const owned = !!item.owned;
+      const previewUrl = item.preview || (item.asset ? fallbackData : '');
+      const iconStyle = previewUrl ? `background-image:url('${previewUrl}')` : '';
+      const iconContent = previewUrl ? '' : (item.icon || '✦');
+      const actionLabel = equipped ? 'מצויד' : (owned ? 'החלף' : 'נעול');
+      const actionClass = equipped ? 'equipped' : (owned ? '' : 'locked');
+      const itemLevel = getItemLevel(kind, item);
+      const maxLevel = getMaxLevelForItem(item);
+      const stateLine = equipped ? 'ציוד פעיל' : (owned ? 'פתוח לבן' : 'נעול לבן');
+      return `
+        <div class="inventorySlot ${rarity.className} ${equipped ? 'active' : ''} ${owned ? 'owned' : 'locked'}">
+          <div class="inventorySlotIconWrap">
+            <div class="inventorySlotIcon ${previewUrl ? 'loadoutPreview' : ''}" style="${iconStyle}">${iconContent}</div>
+            <div class="inventoryRarityPill ${rarity.className}">${rarity.label}</div>
+          </div>
+          <div class="inventorySlotBody">
+            <div class="inventorySlotTop">
+              <div class="inventoryTitleArea">
+                <div class="inventorySlotTitle">${item.name}</div>
+                <div class="inventorySlotMeta"><span class="rarityText">${rarity.label}</span> · ${stateLine} · לבל ${itemLevel}/${maxLevel}</div>
+                <div class="inventorySlotDesc">${item.desc}</div>
+              </div>
+              <div class="inventoryActionCol">
+                <button class="inventoryEquipBtn ${actionClass}" type="button" data-equip-kind="${kind}" data-equip-id="${item.id}" ${owned ? '' : 'disabled'}>
+                  ${actionLabel}
+                </button>
+                <div class="inventoryLockText">${owned ? (equipped ? 'כרגע על בן' : 'אפשר לצייד') : 'הפריט נעול כרגע'}</div>
+              </div>
+            </div>
+            <div class="inventoryStatsGrid">${buildItemStatsMarkup(kind, item)}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderInventory(){
+    inventoryList.innerHTML = buildInventoryMarkup(inventoryState.currentKind);
+  }
+
+  function equipItem(kind, id){
+    const item = getItems(kind).find(x => x.id === id);
+    if(!item) return;
+    if(!item.owned){
+      showText(W/2, H - 145, 'הפריט הזה עדיין נעול', '#ffb86c', 18);
+      burst(player.x, player.y - 30, '#ffb86c', 12);
+      return;
+    }
+    if(kind === 'weapon') inventoryState.equippedWeapon = id;
+    else inventoryState.equippedArmor = id;
+    player.weaponLevel = getEquippedLevel('weapon');
+    player.armorLevel = getEquippedLevel('armor');
+    applyEquipmentStats(false);
+    updateHUD();
+    renderInventory();
+    const rarity = getRarityMeta(item.rarity);
+    showText(W/2, H - 145, item.name + ' מצויד!', rarity.color, 18);
+    burst(player.x, player.y - 30, rarity.color, 16);
+    saveGame('equip');
+  }
+
+  function openInventory(kind){
+    inventoryState.currentKind = kind;
+    const isWeapon = kind === 'weapon';
+    inventoryTitle.textContent = isWeapon ? 'אינבטורי נשקים' : 'אינבטורי ארמור';
+    inventorySub.textContent = isWeapon ? '9 נשקים לבן · רק מקל עץ פתוח כרגע' : '4 ארמורים לבן · רק הארמור ההתחלתי פתוח כרגע';
+    renderInventory();
+    inventoryOverlay.classList.remove('hidden');
+    inventoryOverlay.setAttribute('aria-hidden', 'false');
+    updatePauseBadge();
+  }
+
+  function closeInventory(){
+    inventoryOverlay.classList.add('hidden');
+    inventoryOverlay.setAttribute('aria-hidden', 'true');
+    updatePauseBadge();
+  }
+
+  function isAnyMenuOpen(){ return !inventoryOverlay.classList.contains('hidden') || !mainMenuOverlay.classList.contains('hidden') || (crateOverlay && !crateOverlay.classList.contains('hidden')); }
+  function updatePauseBadge(){ const paused = isAnyMenuOpen() && running && !gameOver; pauseBadge.classList.toggle('hidden', !paused); }
+
+  const questState = {
+    claimed: {},
+    stats: {
+      kills: 0,
+      hits: 0,
+      upgrades: 0,
+      heals: 0,
+      coinsEarned: 0,
+      bosses: 0,
+      miniBosses: 0,
+      highestRound: 1
+    }
+  };
+
+  const questDefs = [
+    {id:'daily_kill_5', group:'daily', title:'נצח 5 אויבים', desc:'הבס 5 מפלצות/חייזרים בכל ראונד.', emoji:'☀️', goal:5, reward:50, progress:() => questState.stats.kills},
+    {id:'daily_hit_20', group:'daily', title:'פגע באויבים 20 פעמים', desc:'כל לחיצה מוצלחת על אויב נחשבת.', emoji:'⚔️', goal:20, reward:40, progress:() => questState.stats.hits},
+    {id:'monthly_round_20', group:'monthly', title:'הגע לראונד 20', desc:'תשרוד עד World 1 · Round 20.', emoji:'📅', goal:20, reward:200, progress:() => questState.stats.highestRound},
+    {id:'monthly_boss_3', group:'monthly', title:'נצח 3 בוסים', desc:'בוסים ומיני־בוסים לא נחשבים כאן — רק Boss אמיתי.', emoji:'👹', goal:3, reward:250, progress:() => questState.stats.bosses},
+    {id:'general_upgrade_10', group:'general', title:'שפר ציוד 10 פעמים', desc:'שדרוג נשק או ארמור נחשב למשימה.', emoji:'⭐', goal:10, reward:120, progress:() => questState.stats.upgrades},
+    {id:'general_coins_500', group:'general', title:'השג 500 מטבעות', desc:'כל כסף שקיבלת מאויבים וממשימות נחשב.', emoji:'🪙', goal:500, reward:150, progress:() => questState.stats.coinsEarned},
+    {id:'event_mini_1', group:'event', title:'נצח מיני־בוס אחד', desc:'מיני־בוס מופיע בראונדים מיוחדים.', emoji:'✅', goal:1, reward:120, progress:() => questState.stats.miniBosses},
+    {id:'ben_level_3', group:'player', title:'בן מגיע לרמה 3', desc:'עלה עם בן לרמה 3 דרך XP מקרבות.', emoji:'🧑‍🚀', goal:3, reward:100, progress:() => player.level},
+    {id:'ben_kill_10', group:'player', title:'בן מנצח 10 אויבים', desc:'כל אויב שבן מביס נחשב למשימה של בן.', emoji:'⚔️', goal:10, reward:130, progress:() => questState.stats.kills},
+    {id:'ben_upgrade_5', group:'player', title:'שדרג ציוד של בן 5 פעמים', desc:'שדרוג נשק או ארמור של בן נחשב להתקדמות.', emoji:'🛠️', goal:5, reward:160, progress:() => questState.stats.upgrades},
+    {id:'ben_heal_2', group:'player', title:'רפא את בן 2 פעמים', desc:'לחיצה על ריפוי בזמן שחסר חיים מקדמת את המשימה.', emoji:'💚', goal:2, reward:80, progress:() => questState.stats.heals}
+  ];
+
+
+  function storageGet(key){
+    try { return window.localStorage ? localStorage.getItem(key) : null; } catch(err){ return null; }
+  }
+  function storageSet(key, value){
+    try { if(window.localStorage) localStorage.setItem(key, value); return true; } catch(err){ return false; }
+  }
+  function saveKeyFor(user=currentUser){ return 'benGameSave:' + (user && user.id ? user.id : 'guest'); }
+  function setSaveStatus(text, good=true){
+    if(!saveStatusEl) return;
+    saveStatusEl.textContent = text;
+    saveStatusEl.style.color = good ? '#9dffbe' : '#ffb6c1';
+  }
+  function setUserPanelCollapsed(collapsed){
+    if(!userPanel || !userToggleBtn) return;
+    userPanel.classList.toggle('userCollapsed', collapsed);
+    userToggleBtn.textContent = collapsed ? '›' : '‹';
+    userToggleBtn.setAttribute('aria-label', collapsed ? 'פתח משתמש' : 'הסתר משתמש');
+    storageSet('benGameUserPanelCollapsed', collapsed ? '1' : '0');
+  }
+  function initUserPanelToggle(){
+    const collapsed = storageGet('benGameUserPanelCollapsed') === '1';
+    setUserPanelCollapsed(collapsed);
+    if(userToggleBtn){
+      userToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setUserPanelCollapsed(!userPanel.classList.contains('userCollapsed'));
+      }, {passive:false});
+    }
+  }
+  function renderUserPanel(){
+    if(userNameEl) userNameEl.textContent = currentUser.name || 'אורח';
+    if(userAvatar){
+      userAvatar.innerHTML = currentUser.picture ? '<img src="' + currentUser.picture + '" alt="">' : (currentUser.name || '?').trim().slice(0,1);
+    }
+    if(logoutBtn) logoutBtn.disabled = currentUser.id === 'guest';
+    const googleConfigured = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('PASTE_');
+    if(googleLoginBtn){
+      googleLoginBtn.disabled = false;
+      googleLoginBtn.classList.toggle('needsConfig', !googleConfigured);
+      googleLoginBtn.title = googleConfigured ? 'התחבר עם Google' : 'צריך לשים GOOGLE_CLIENT_ID בקוד';
+    }
+  }
+  function captureSaveData(){
+    return {
+      version: SAVE_VERSION,
+      savedAt: Date.now(),
+      user: { id: currentUser.id, name: currentUser.name, picture: currentUser.picture || '' },
+      player: {
+        coins: player.coins,
+        gems: player.gems,
+        level: player.level,
+        xp: player.xp,
+        xpNeed: player.xpNeed,
+        gameLevel: player.gameLevel,
+        gameXp: player.gameXp,
+        gameXpNeed: player.gameXpNeed,
+        kills: player.kills
+      },
+      inventory: {
+        equippedWeapon: inventoryState.equippedWeapon,
+        equippedArmor: inventoryState.equippedArmor,
+        weaponLevels: {...inventoryState.weaponLevels},
+        armorLevels: {...inventoryState.armorLevels},
+        ownedWeapons: inventoryState.weapons.filter(item => item.owned).map(item => item.id),
+        ownedArmors: inventoryState.armors.filter(item => item.owned).map(item => item.id)
+      },
+      quests: {
+        claimed: {...questState.claimed},
+        stats: {...questState.stats}
+      }
+    };
+  }
+  function saveGame(reason='auto'){
+    if(!saveReady) return;
+    const ok = storageSet(saveKeyFor(), JSON.stringify(captureSaveData()));
+    setSaveStatus(ok ? 'נשמר עכשיו' : 'השמירה נכשלה', ok);
+  }
+  function applySaveData(data){
+    if(!data || !data.player || !data.inventory) return false;
+    const p = data.player;
+    ['coins','gems','level','xp','xpNeed','gameLevel','gameXp','gameXpNeed','kills'].forEach(key => {
+      if(Number.isFinite(Number(p[key]))) player[key] = Number(p[key]);
+    });
+    const inv = data.inventory;
+    const ownedWeapons = new Set(inv.ownedWeapons || ['wood_stick']);
+    const ownedArmors = new Set(inv.ownedArmors || ['survivor_armor']);
+    inventoryState.weapons.forEach(item => { item.owned = item.id === 'wood_stick' || ownedWeapons.has(item.id); });
+    inventoryState.armors.forEach(item => { item.owned = item.id === 'survivor_armor' || ownedArmors.has(item.id); });
+    inventoryState.weaponLevels = {...(inv.weaponLevels || {wood_stick:1})};
+    inventoryState.armorLevels = {...(inv.armorLevels || {survivor_armor:1})};
+    if(!inventoryState.weaponLevels.wood_stick) inventoryState.weaponLevels.wood_stick = 1;
+    if(!inventoryState.armorLevels.survivor_armor) inventoryState.armorLevels.survivor_armor = 1;
+    const savedWeapon = inventoryState.weapons.find(item => item.id === inv.equippedWeapon && item.owned);
+    const savedArmor = inventoryState.armors.find(item => item.id === inv.equippedArmor && item.owned);
+    inventoryState.equippedWeapon = savedWeapon ? savedWeapon.id : 'wood_stick';
+    inventoryState.equippedArmor = savedArmor ? savedArmor.id : 'survivor_armor';
+    if(data.quests){
+      questState.claimed = {...(data.quests.claimed || {})};
+      questState.stats = {...questState.stats, ...(data.quests.stats || {})};
+    }
+    applyEquipmentStats(false);
+    updateHUD();
+    return true;
+  }
+  function loadGameForCurrentUser(){
+    const raw = storageGet(saveKeyFor());
+    if(!raw){
+      setSaveStatus(currentUser.id === 'guest' ? 'שמירה כאורח' : 'אין שמירה עדיין');
+      updateHUD();
+      return false;
+    }
+    try{
+      const loaded = applySaveData(JSON.parse(raw));
+      setSaveStatus(loaded ? 'שמירה נטענה' : 'לא ניתן לטעון שמירה', loaded);
+      return loaded;
+    }catch(err){
+      setSaveStatus('שמירה פגומה', false);
+      return false;
+    }
+  }
+  function switchUser(user){
+    currentUser = user && user.id ? user : {...GUEST_USER};
+    storageSet('benGameActiveUser', JSON.stringify(currentUser));
+    renderUserPanel();
+    loadGameForCurrentUser();
+    renderInventory();
+  }
+  function decodeGoogleJwt(token){
+    const payload = token.split('.')[1] || '';
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(Array.from(atob(normalized), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join(''));
+    return JSON.parse(json);
+  }
+  function handleGoogleCredential(response){
+    try{
+      const profile = decodeGoogleJwt(response.credential || '');
+      if(!profile.sub) throw new Error('missing-sub');
+      switchUser({ id:'google:' + profile.sub, name:profile.name || profile.email || 'Google', picture:profile.picture || '' });
+      saveGame('google-login');
+    }catch(err){
+      setSaveStatus('התחברות Google נכשלה', false);
+    }
+  }
+  function initGoogleLogin(){
+    const configured = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('PASTE_');
+    if(!configured) return;
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if(!window.google || !google.accounts || !google.accounts.id) return;
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select:false, cancel_on_tap_outside:true });
+      if(googleLoginBtn){
+        googleLoginBtn.disabled = false;
+        googleLoginBtn.addEventListener('click', () => google.accounts.id.prompt(), {passive:true});
+      }
+    };
+    document.head.appendChild(script);
+  }
+  function initUserSystem(){
+    const rawUser = storageGet('benGameActiveUser');
+    if(rawUser){
+      try { currentUser = JSON.parse(rawUser) || {...GUEST_USER}; } catch(err){ currentUser = {...GUEST_USER}; }
+    }
+    saveReady = true;
+    initUserPanelToggle();
+    renderUserPanel();
+    loadGameForCurrentUser();
+    initGoogleLogin();
+    if(guestLoginBtn) guestLoginBtn.addEventListener('click', () => switchUser({...GUEST_USER}), {passive:true});
+    if(logoutBtn) logoutBtn.addEventListener('click', () => switchUser({...GUEST_USER}), {passive:true});
+    if(googleLoginBtn && (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('PASTE_'))){
+      googleLoginBtn.addEventListener('click', () => setSaveStatus('צריך Google Client ID', false), {passive:true});
+    }
+    window.addEventListener('beforeunload', () => saveGame('exit'));
+  }
+
+  function addCoins(amount, source='reward'){
+    const value = Math.max(0, Math.round(amount || 0));
+    if(!value) return;
+    player.coins += value;
+    questState.stats.coinsEarned += value;
+    saveGame(source);
+  }
+
+  function resetQuestProgress(){
+    questState.claimed = {};
+    questState.stats.kills = 0;
+    questState.stats.hits = 0;
+    questState.stats.upgrades = 0;
+    questState.stats.heals = 0;
+    questState.stats.coinsEarned = 0;
+    questState.stats.bosses = 0;
+    questState.stats.miniBosses = 0;
+    questState.stats.highestRound = 1;
+  }
+
+  function getQuestProgress(quest){
+    const progress = Number(quest.progress ? quest.progress() : 0) || 0;
+    return Math.max(0, Math.min(progress, quest.goal));
+  }
+
+  function buildQuestRow(quest){
+    const progress = getQuestProgress(quest);
+    const done = progress >= quest.goal;
+    const claimed = !!questState.claimed[quest.id];
+    const pct = Math.max(0, Math.min(100, Math.round(progress / quest.goal * 100)));
+    const btnText = claimed ? 'נלקח ✓' : done ? 'קבל פרס' : 'לא הושלם';
+    return `
+      <div class="questRow" data-quest-row="${quest.id}">
+        <div class="questInfo">
+          <div class="questText"><b>${quest.emoji || '⭐'} ${quest.title}</b><span>${quest.desc}</span></div>
+          <div class="questProgressLine ${done ? 'questDone' : ''}">${progress}/${quest.goal}</div>
+          <div class="questProgressBar"><div class="questProgressFill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="questActions">
+          <div class="questReward">+${quest.reward} 🪙</div>
+          <button class="questClaimBtn" type="button" data-quest-claim="${quest.id}" ${claimed ? 'disabled' : ''}>${btnText}</button>
+        </div>
+      </div>`;
+  }
+
+  function renderQuestPanels(){
+    if(!questListEls) return;
+    Object.entries(questListEls).forEach(([group, el]) => {
+      if(!el) return;
+      const quests = questDefs.filter(q => q.group === group);
+      el.innerHTML = quests.length ? quests.map(buildQuestRow).join('') : '<div class="emptySoon">אין משימות כרגע</div>';
+    });
+  }
+
+  function claimQuest(id){
+    const quest = questDefs.find(q => q.id === id);
+    if(!quest) return;
+    const progress = getQuestProgress(quest);
+    if(questState.claimed[id]){
+      showText(W/2, H * .50, 'כבר לקחת את הפרס', '#dbe4ff', 18);
+      return;
+    }
+    if(progress < quest.goal){
+      showText(W/2, H * .50, 'עדיין לא השלמת את המשימה', '#ffb6c1', 18);
+      return;
+    }
+    questState.claimed[id] = true;
+    addCoins(quest.reward, 'quest');
+    saveGame('quest');
+    showText(W/2, H * .50, '+' + quest.reward + ' 🪙 משימה!', '#ffd166', 20);
+    burst(player.x, player.y - 40, '#ffd166', 22);
+    renderQuestPanels();
+    updateHUD();
+  }
+
+  const BANNER_CONFIG = {
+    weapon:{ title:'באנר נשקים כללים', itemKind:'weapon', banner:'', chest:'', price1:100, price10:900 },
+    armor:{ title:'באנר ארמורים כללים', itemKind:'armor', banner:'', chest:'', price1:100, price10:900 }
+  };
+  const WEAPON_EFFECTS = {
+    wood_stick: [],
+    stone_hammer: [{id:'bleed', chance:.12}],
+    hunter_spear: [{id:'poison', chance:.15}],
+    iron_pipe: [{id:'bleed', chance:.18}],
+    bone_club: [{id:'freeze', chance:.20}],
+    reinforced_bone: [{id:'freeze', chance:.38},{id:'dark', chance:.10}],
+    shock_axe: [{id:'electric', chance:.35}],
+    scrap_sword: [{id:'bleed', chance:.28},{id:'acid', chance:.18}],
+    plasma_blade: [{id:'electric', chance:.50},{id:'fire', chance:.25},{id:'dark', chance:.14}]
+  };
+  const STATUS_META = {
+    fire:{label:'שריפה', color:'#ff7a2f', dot:5, duration:3.2, emoji:'🔥'},
+    poison:{label:'הרעלה', color:'#b06cff', dot:4, duration:4.0, emoji:'☠️'},
+    acid:{label:'חומצה', color:'#6dff82', dot:6, duration:3.3, emoji:'🧪'},
+    bleed:{label:'דימום', color:'#ff4f6d', dot:4, duration:3.1, emoji:'🩸'},
+    freeze:{label:'הקפאה', color:'#8de5ff', dot:3, duration:3.0, emoji:'❄️'},
+    electric:{label:'חשמול', color:'#ffe169', dot:7, duration:2.6, emoji:'⚡'},
+    dark:{label:'אפלה', color:'#8d74ff', dot:5, duration:3.7, emoji:'🌑'}
+  };
+
+  function getStarterId(kind){ return kind === 'weapon' ? 'wood_stick' : 'survivor_armor'; }
+  function getItemPool(kind){ return getItems(kind).filter(item => item.id !== getStarterId(kind)); }
+  function rollRarity(){
+    const r = Math.random();
+    if(r < .05) return 'legendary';
+    if(r < .18) return 'epic';
+    if(r < .45) return 'rare';
+    return 'common';
+  }
+  function pickBannerItem(kind){
+    const pool = getItemPool(kind);
+    let rarity = rollRarity();
+    let sameRarity = pool.filter(item => item.rarity === rarity);
+    if(!sameRarity.length){
+      const fallbackOrder = ['common','rare','epic','legendary'];
+      const fallback = fallbackOrder.find(key => pool.some(item => item.rarity === key));
+      sameRarity = pool.filter(item => item.rarity === (fallback || 'common'));
+      rarity = sameRarity[0]?.rarity || 'common';
+    }
+    const item = sameRarity[Math.floor(Math.random() * sameRarity.length)] || pool[0];
+    return item;
+  }
+  function duplicateCompensation(item){
+    return item.rarity === 'legendary' ? 280 : item.rarity === 'epic' ? 150 : item.rarity === 'rare' ? 80 : 40;
+  }
+  function grantBannerItem(kind, item){
+    const levelBag = kind === 'weapon' ? inventoryState.weaponLevels : inventoryState.armorLevels;
+    if(!item.owned){
+      item.owned = true;
+      if(!levelBag[item.id]) levelBag[item.id] = 1;
+      saveGame('new-item');
+      return { kind, item, duplicate:false, coins:0 };
+    }
+    const coins = duplicateCompensation(item);
+    addCoins(coins, 'duplicate');
+    return { kind, item, duplicate:true, coins };
+  }
+  function setCrateLegendaryMode(on){
+    if(crateLegendaryGlow) crateLegendaryGlow.classList.toggle('hidden', !on);
+    if(crateSparkles) crateSparkles.classList.toggle('hidden', !on);
+  }
+  function closeCrateOverlay(){
+    if(!crateOverlay) return;
+    crateOverlay.classList.add('hidden');
+    crateOverlay.setAttribute('aria-hidden','true');
+    setCrateLegendaryMode(false);
+    updatePauseBadge();
+  }
+  function openCrateOverlay(kind, count){
+    const cfg = BANNER_CONFIG[kind];
+    if(!cfg || !crateOverlay) return;
+    crateOverlay.classList.remove('hidden');
+    crateOverlay.setAttribute('aria-hidden','false');
+    if(crateTitle) crateTitle.textContent = '🎁 ' + cfg.title;
+    if(crateSubTitle) crateSubTitle.textContent = 'פתיחה של ' + (count === 10 ? '10' : '1') + ' עכשיו...';
+    if(crateBannerMain){ crateBannerMain.src = cfg.banner; crateBannerMain.alt = cfg.title; }
+    if(crateChestMain){ crateChestMain.src = cfg.chest; crateChestMain.alt = cfg.title; }
+    if(crateSpinText) crateSpinText.textContent = 'פותח...';
+    if(crateResultsGrid) crateResultsGrid.innerHTML = '';
+    setCrateLegendaryMode(false);
+    updatePauseBadge();
+  }
+  function renderCrateResults(results){
+    if(!crateResultsGrid) return;
+    crateResultsGrid.innerHTML = results.map(res => {
+      const meta = getRarityMeta(res.item.rarity);
+      return `
+        <div class="crateResultCard ${res.item.rarity}">
+          <div class="crateResultTop"><div class="crateResultName">${res.item.name}</div><div class="crateTag">${meta.label}</div></div>
+          <div class="crateResultMeta">${res.kind === 'weapon' ? 'נשק' : 'ארמור'} · לבל התחלתי 1</div>
+          <div class="crateResultDesc">${res.item.desc || ''}</div>
+          ${res.duplicate ? `<div class="crateDup">כבר קיים · +${res.coins} 🪙</div>` : `<div class="crateDup" style="color:#9dffbe">חדש לאינבנטורי ✓</div>`}
+        </div>`;
+    }).join('');
+  }
+  function resolveBannerOpen(kind, count){
+    const results = [];
+    for(let i=0;i<count;i++){
+      const item = pickBannerItem(kind);
+      results.push(grantBannerItem(kind, item));
+    }
+    const hasLegendary = results.some(res => res.item.rarity === 'legendary');
+    setCrateLegendaryMode(hasLegendary);
+    if(crateSubTitle) crateSubTitle.textContent = hasLegendary ? 'לגנדרי יצא! קיבלת פתיחה מיוחדת ✨' : 'הפתיחה הושלמה';
+    if(crateSpinText) crateSpinText.textContent = hasLegendary ? 'LEGENDARY DROP!' : 'קיבלת ' + results.length + ' פריטים';
+    renderCrateResults(results);
+    if(results.length === 1){
+      const res = results[0];
+      showText(W/2, H * .50, res.item.name, getRarityMeta(res.item.rarity).color, 22);
+    } else {
+      showText(W/2, H * .50, 'פתחת ' + results.length + ' פריטים!', '#ffd166', 22);
+    }
+    burst(player.x, player.y - 35, hasLegendary ? '#ffd166' : '#58adff', hasLegendary ? 28 : 20);
+    updateHUD();
+  }
+  function openBanner(kind, count){
+    const cfg = BANNER_CONFIG[kind];
+    if(!cfg || !running || gameOver) return;
+    const cost = count === 10 ? cfg.price10 : cfg.price1;
+    if(player.gems < cost){
+      showText(W/2, H * .50, 'אין מספיק יהלומים', '#ffb6c1', 20);
+      return;
+    }
+    player.gems -= cost;
+    updateHUD();
+    openCrateOverlay(kind, count);
+    setTimeout(() => resolveBannerOpen(kind, count), 720);
+  }
+  function applyWeaponStatusEffects(weapon){
+    if(!enemy || enemy.dead || !weapon) return;
+    const defs = WEAPON_EFFECTS[weapon.id] || [];
+    if(!defs.length) return;
+    if(!enemy.statusEffects) enemy.statusEffects = {};
+    defs.forEach(def => {
+      if(Math.random() > def.chance) return;
+      const meta = STATUS_META[def.id];
+      if(!meta) return;
+      enemy.statusEffects[def.id] = { id:def.id, remaining:meta.duration, tick:.55 + Math.random() * .12, dot:meta.dot, color:meta.color, emoji:meta.emoji, label:meta.label };
+      showText(enemy.x + rnd(-12,12), enemy.y - enemy.r - 30 - Math.random()*16, meta.emoji + ' ' + meta.label, meta.color, 16);
+      burst(enemy.x, enemy.y, meta.color, 8);
+    });
+  }
+  function updateEnemyStatuses(dt){
+    if(!enemy || enemy.dead || !enemy.statusEffects) return;
+    const active = Object.values(enemy.statusEffects);
+    active.forEach(fx => {
+      fx.remaining -= dt;
+      fx.tick -= dt;
+      if(fx.tick <= 0){
+        fx.tick += 0.68;
+        if(enemy && !enemy.dead){
+          enemy.hp -= fx.dot;
+          enemy.hit = Math.max(enemy.hit, .12);
+          showText(enemy.x + rnd(-16,16), enemy.y - enemy.r - 8, '-' + fx.dot, fx.color, 15);
+          burst(enemy.x, enemy.y, fx.color, 5);
+          if(enemy.hp <= 0){ enemy.hp = 0; killEnemy(); }
+        }
+      }
+      if(fx.remaining <= 0 && enemy && enemy.statusEffects){ delete enemy.statusEffects[fx.id]; }
+    });
+  }
+
+  const MAIN_MENU_META = {
+    gifts:{emoji:'🎁', title:'גיפטים / הודעות משחק'},
+    banners:{emoji:'🎰', title:'באנרים לפתיחה'},
+    events:{emoji:'🎉', title:'איוונטים'},
+    eventQuests:{emoji:'✅', title:'משימות איוונט'},
+    playerQuests:{emoji:'🧑‍🚀', title:'משימות בן'},
+    realShop:{emoji:'💳', title:'שופ כסף אמיתי'},
+    missions:{emoji:'📌', title:'משימות רגילות'},
+    gamemodes:{emoji:'🎮', title:'GAMEMODES'}
+  };
+  function setMainMenuPanel(key){
+    const meta = MAIN_MENU_META[key] || MAIN_MENU_META.gifts;
+    if(mainMenuEmoji) mainMenuEmoji.textContent = meta.emoji;
+    if(mainMenuTitleText) mainMenuTitleText.textContent = meta.title;
+    menuTabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.menuTab === key));
+    menuPanels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.menuPanel !== key));
+    if(key === 'missions') setMissionPanel('daily');
+    renderQuestPanels();
+    updateHUD();
+  }
+  function setMissionPanel(key){
+    missionTabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.missionTab === key));
+    missionPanels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.missionPanel !== key));
+    renderQuestPanels();
+  }
+  function openMainMenu(panel='gifts'){
+    mainMenuOverlay.classList.remove('hidden');
+    mainMenuOverlay.setAttribute('aria-hidden','false');
+    setMainMenuPanel(panel);
+    updateHUD();
+    updatePauseBadge();
+  }
+  function closeMainMenu(){ mainMenuOverlay.classList.add('hidden'); mainMenuOverlay.setAttribute('aria-hidden','true'); updatePauseBadge(); }
+
+  function bindInventoryTrigger(el, kind){
+    if(!el) return;
+    const open = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openInventory(kind);
+    };
+    el.addEventListener('pointerdown', open, {passive:false});
+    el.addEventListener('click', open, {passive:false});
+    el.addEventListener('keydown', (event) => {
+      if(event.key === 'Enter' || event.key === ' '){
+        open(event);
+      }
+    });
+  }
+
+  bindInventoryTrigger(weaponCard, 'weapon');
+  bindInventoryTrigger(armorCard, 'armor');
+  inventoryOverlay.addEventListener('pointerdown', (event) => {
+    if(event.target === inventoryOverlay) closeInventory();
+  }, {passive:true});
+  inventoryClose.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeInventory();
+  });
+  window.addEventListener('keydown', (event) => {
+    if(event.key === 'Escape' && !inventoryOverlay.classList.contains('hidden')) closeInventory();
+  });
+  sideMenuBtn.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); openMainMenu(); });
+  mainMenuClose.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); closeMainMenu(); });
+  mainMenuOverlay.addEventListener('pointerdown', (event) => { if(event.target === mainMenuOverlay) closeMainMenu(); }, {passive:true});
+  function handleMainMenuAction(event){
+    const menuTab = event.target.closest('[data-menu-tab]');
+    if(menuTab){ event.preventDefault(); event.stopPropagation(); setMainMenuPanel(menuTab.dataset.menuTab); return; }
+    const missionTab = event.target.closest('[data-mission-tab]');
+    if(missionTab){ event.preventDefault(); event.stopPropagation(); setMissionPanel(missionTab.dataset.missionTab); return; }
+    const bannerBtn = event.target.closest('[data-open-banner]');
+    if(bannerBtn){ event.preventDefault(); event.stopPropagation(); openBanner(bannerBtn.dataset.openBanner, Number(bannerBtn.dataset.openCount || 1)); return; }
+    const questClaim = event.target.closest('[data-quest-claim]');
+    if(questClaim){ event.preventDefault(); event.stopPropagation(); claimQuest(questClaim.dataset.questClaim); return; }
+  }
+  const mainMenuPanelEl = document.querySelector('.mainMenuPanel');
+  if(mainMenuPanelEl){
+    mainMenuPanelEl.addEventListener('click', handleMainMenuAction, {passive:false});
+  }
+  if(mainMenuPanelEl){
+    mainMenuPanelEl.addEventListener('pointerup', (event) => {
+      if(event.target.closest('[data-menu-tab], [data-mission-tab], [data-quest-claim]')) handleMainMenuAction(event);
+    }, {passive:false});
+  }
+  mainMenuOverlay.addEventListener('click', handleMainMenuAction, {passive:false});
+  window.addEventListener('keydown', (event) => { if(event.key === 'Escape' && !mainMenuOverlay.classList.contains('hidden')) closeMainMenu(); });
+  if(crateClose){ crateClose.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); closeCrateOverlay(); }); }
+  if(crateOverlay){ crateOverlay.addEventListener('pointerdown', (event) => { if(event.target === crateOverlay) closeCrateOverlay(); }, {passive:true}); }
+  window.addEventListener('keydown', (event) => { if(event.key === 'Escape' && crateOverlay && !crateOverlay.classList.contains('hidden')) closeCrateOverlay(); });
+
+  inventoryList.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-equip-id]');
+    if(!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    equipItem(target.dataset.equipKind, target.dataset.equipId);
+  }, {passive:false});
+
+
+  const heroSheet = new Image();
+  let heroSheetReady = false;
+  const heroFrames = { idle: [], attack: [] };
+  const heroTintCanvas = document.createElement('canvas');
+  const heroTintCtx = heroTintCanvas.getContext('2d', { alpha: true });
+
+  const heroLoadoutImages = {};
+  function preloadHeroLoadout(item){
+    if(!item || !item.sheet || heroLoadoutImages[item.id]) return;
+    const img = new Image();
+    img.src = item.sheet;
+    heroLoadoutImages[item.id] = img;
+  }
+  function preloadAllLoadouts(){
+    [...inventoryState.weapons, ...inventoryState.armors].forEach(preloadHeroLoadout);
+  }
+  function getActiveLoadoutImage(){
+    const weapon = getEquippedWeapon();
+    const armor = getEquippedArmor();
+    // נשק מקבל עדיפות כדי לראות את הנשק על בן; אם נשק בסיסי, מציגים ארמור.
+    const item = (weapon && weapon.id !== 'wood_stick' && weapon.sheet) ? weapon : ((armor && armor.sheet) ? armor : null);
+    if(!item) return null;
+    preloadHeroLoadout(item);
+    const img = heroLoadoutImages[item.id];
+    if(!img || !img.complete || !img.naturalWidth) return null;
+    return {img, item};
+  }
+
+  // Paper Doll modular renderer: body / armor body / weapon overlay
+  const FULL_LOADOUT_ASSETS = {
+    survivor_armor: {
+      wood_stick: 'assets/images/img_003_b2307bf6a4.png',
+      stone_hammer: 'assets/images/img_004_50d5cad4b9.png',
+      hunter_spear: 'assets/images/img_005_a7fc662027.png',
+      iron_pipe: 'assets/images/img_006_2f1cf1f03e.png',
+      bone_club: 'assets/images/img_007_c60e19cf2f.png',
+      reinforced_bone: 'assets/images/img_010_c7d8e9d4ba.png',
+      shock_axe: 'assets/images/img_008_bdbe1bf87b.png',
+      scrap_sword: 'assets/images/img_009_ffd19bc44d.png',
+      plasma_blade: 'assets/images/img_010_c7d8e9d4ba.png'
+    },
+    hero_armor: {
+      wood_stick: 'assets/images/hero_armor_wood_stick_clean_v2.png',
+      stone_hammer: 'assets/images/img_012_dfad24b461.png',
+      hunter_spear: 'assets/images/img_013_064bfc9742.png',
+      iron_pipe: 'assets/images/img_014_7aa523ffd7.png',
+      bone_club: 'assets/images/img_015_0ee5a3bf61.png',
+      reinforced_bone: 'assets/images/img_018_f3a2641bbd.png',
+      shock_axe: 'assets/images/img_016_9e1f033f80.png',
+      scrap_sword: 'assets/images/img_017_33ca54eb5c.png',
+      plasma_blade: 'assets/images/img_018_f3a2641bbd.png'
+    }
+  };
+  const fullLoadoutImages = {};
+
+  // Paper Doll v2: high-quality body/armor sheet + anchored weapon layer
+  const PAPER_BODY_ASSETS = {
+    base:'',
+    survivor_armor:'',
+    iron_armor:'',
+    alien_armor:'',
+    hero_armor:''
+  };
+  const PAPER_WEAPON_ASSETS = {
+    wood_stick:'',
+    stone_hammer:'',
+    hunter_spear:'',
+    iron_pipe:'',
+    bone_club:'',
+    reinforced_bone:'',
+    shock_axe:'',
+    scrap_sword:'',
+    plasma_blade:''
+  };
+  const PAPER_WEAPON_EFFECT_ASSETS = {
+    stone_hammer:'',
+    hunter_spear:'',
+    iron_pipe:'',
+    bone_club:'',
+    reinforced_bone:'',
+    shock_axe:'',
+    scrap_sword:'',
+    plasma_blade:''
+  };
+  const PAPER_WEAPON_CATEGORIES = {
+    wood_stick:'club', stone_hammer:'club', iron_pipe:'club', bone_club:'club', reinforced_bone:'club',
+    hunter_spear:'blade', shock_axe:'axe', scrap_sword:'sword', plasma_blade:'energy'
+  };
+  const PAPER_WEAPON_GRIPS = {
+    // grip coordinates are the point inside the weapon art that should sit in Ben's hand.
+    // values tuned to keep each weapon visually locked to the hand instead of floating across the torso.
+    wood_stick:{x:.18,y:.82,scale:.78},
+    stone_hammer:{x:.28,y:.82,scale:.74},
+    hunter_spear:{x:.16,y:.84,scale:.58},
+    iron_pipe:{x:.16,y:.83,scale:.66},
+    bone_club:{x:.18,y:.82,scale:.68},
+    reinforced_bone:{x:.18,y:.82,scale:.70},
+    shock_axe:{x:.28,y:.82,scale:.66},
+    scrap_sword:{x:.16,y:.84,scale:.70},
+    plasma_blade:{x:.16,y:.84,scale:.76}
+  };
+  const PAPER_WEAPON_TUNING = {
+    wood_stick:{x:-.010,y:.010,rot:2,idleScale:1.00,attackScale:1.04},
+    stone_hammer:{x:-.012,y:.016,rot:2,idleScale:1.00,attackScale:1.04},
+    hunter_spear:{x:-.074,y:.060,rot:-26,idleScale:.94,attackScale:1.00},
+    iron_pipe:{x:-.048,y:.026,rot:-10,idleScale:.96,attackScale:1.02},
+    bone_club:{x:-.040,y:.024,rot:-5,idleScale:.97,attackScale:1.02},
+    reinforced_bone:{x:-.040,y:.024,rot:-5,idleScale:.98,attackScale:1.03},
+    shock_axe:{x:-.062,y:.034,rot:-18,idleScale:.96,attackScale:1.01},
+    scrap_sword:{x:-.066,y:.044,rot:-28,idleScale:.95,attackScale:1.00},
+    plasma_blade:{x:-.066,y:.044,rot:-28,idleScale:.98,attackScale:1.04}
+  };
+  const PAPER_FRAME_NUDGES = [
+    {x:0,y:0,rot:0},
+    {x:.004,y:0,rot:0},
+    {x:-.010,y:-.040,rot:-18},
+    {x:0,y:0,rot:0},
+    {x:-.010,y:-.012,rot:-10},
+    {x:.022,y:-.004,rot:16},
+    {x:.020,y:-.028,rot:28},
+    {x:-.012,y:.012,rot:-8}
+  ];
+  const PAPER_HAND_POINTS = [
+    {x:.285,y:.635,rot:-22,scale:1.00},
+    {x:.285,y:.630,rot:-19,scale:1.00},
+    {x:.285,y:.585,rot:-36,scale:1.02},
+    {x:.285,y:.620,rot:-25,scale:1.00},
+    {x:.225,y:.515,rot:-58,scale:1.05},
+    {x:.465,y:.610,rot:24,scale:1.12},
+    {x:.430,y:.560,rot:38,scale:1.12},
+    {x:.340,y:.600,rot:-18,scale:1.00}
+  ];
+  const PAPER_EFFECT_BOXES = [
+    null,null,null,null,
+    {x:.09,y:.28,w:.62,alpha:.55},
+    {x:.18,y:.38,w:.68,alpha:.82},
+    {x:.18,y:.36,w:.70,alpha:.86},
+    null
+  ];
+
+  const PAPER_WEAPON_HAND_SHEET = '';
+  const PAPER_WEAPON_HAND_ROWS = {
+    stone_hammer:0,
+    hunter_spear:1,
+    iron_pipe:2,
+    bone_club:3,
+    reinforced_bone:4,
+    shock_axe:5,
+    scrap_sword:6,
+    plasma_blade:7
+  };
+  const PAPER_WEAPON_HAND_TUNE = {
+    stone_hammer:{dx:-.010,dy:.000,scale:1.03},
+    hunter_spear:{dx:-.005,dy:.000,scale:.95},
+    iron_pipe:{dx:-.006,dy:.000,scale:1.00},
+    bone_club:{dx:-.004,dy:.000,scale:1.00},
+    reinforced_bone:{dx:-.004,dy:.000,scale:1.02},
+    shock_axe:{dx:-.002,dy:.000,scale:1.02},
+    scrap_sword:{dx:-.002,dy:.000,scale:1.00},
+    plasma_blade:{dx:-.002,dy:.000,scale:1.04}
+  };
+  const PAPER_WEAPON_HAND_ANCHORS = [
+    {x:.288,y:.638,wristX:.20,wristY:.78,scale:.41},
+    {x:.288,y:.638,wristX:.20,wristY:.78,scale:.41},
+    {x:.288,y:.638,wristX:.20,wristY:.78,scale:.41},
+    {x:.288,y:.638,wristX:.20,wristY:.78,scale:.41},
+    {x:.258,y:.566,wristX:.48,wristY:.76,scale:.42},
+    {x:.398,y:.574,wristX:.35,wristY:.63,scale:.50},
+    {x:.450,y:.542,wristX:.35,wristY:.63,scale:.50},
+    {x:.470,y:.602,wristX:.74,wristY:.78,scale:.42}
+  ];
+
+  const paperImages = { bodies:{}, weapons:{}, effects:{}, weaponHands:{} };
+  function loadPaperImage(store, id, src){
+    if(!store[id]){ const img = new Image(); img.src = src; store[id] = img; }
+    return store[id];
+  }
+  Object.entries(PAPER_BODY_ASSETS).forEach(([id, src]) => loadPaperImage(paperImages.bodies, id, src));
+  Object.entries(PAPER_WEAPON_ASSETS).forEach(([id, src]) => loadPaperImage(paperImages.weapons, id, src));
+  Object.entries(PAPER_WEAPON_EFFECT_ASSETS).forEach(([id, src]) => loadPaperImage(paperImages.effects, id, src));
+  loadPaperImage(paperImages.weaponHands, 'sheet', PAPER_WEAPON_HAND_SHEET);
+
+  function getPaperImageReady(img){ return !!(img && img.complete && img.naturalWidth); }
+
+  function getFullLoadoutImage(){
+    const armor = getEquippedArmor();
+    const weapon = getEquippedWeapon();
+    const armorId = armor && armor.id ? armor.id : 'survivor_armor';
+    const weaponId = weapon && weapon.id ? weapon.id : 'wood_stick';
+    const src = FULL_LOADOUT_ASSETS[armorId] && FULL_LOADOUT_ASSETS[armorId][weaponId];
+    if(!src) return null;
+    if(!fullLoadoutImages[armorId]) fullLoadoutImages[armorId] = {};
+    if(!fullLoadoutImages[armorId][weaponId]){
+      const img = new Image();
+      img.src = src;
+      fullLoadoutImages[armorId][weaponId] = img;
+    }
+    const img = fullLoadoutImages[armorId][weaponId];
+    return getPaperImageReady(img) ? img : null;
+  }
+
+  function drawFullLoadoutHero(){
+    const img = getFullLoadoutImage();
+    if(!img) return false;
+    const blend = getPaperFrameBlend();
+    const frA = getPaperSheetFrame(img, blend.current);
+    const frB = getPaperSheetFrame(img, blend.next);
+    const attacking = player.swing > 0;
+    const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
+    const hurtT = clamp(player.hurt / 0.26, 0, 1);
+    const spriteH = clamp(H * 0.48, 310, 460);
+    const spriteW = spriteH * (frA.sw / frA.sh);
+    const idleBob = attacking ? 0 : Math.sin(time * 4.0) * 2.2;
+    const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 3 : 0;
+    const bottomY = player.y + clamp(H * 0.128, 72, 110) + idleBob;
+    const dx = Math.round(player.x - spriteW / 2 + attackShift);
+    const dy = Math.round(bottomY - spriteH);
+
+    const drawFrame = (fr, alpha=1) => {
+      if(alpha <= 0.001) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = true;
+      if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+      if(hurtT > 0.01){
+        ctx.shadowColor = `rgba(255,35,55,${0.92 * hurtT})`;
+        ctx.shadowBlur = 28 * hurtT;
+        ctx.filter = `saturate(${1 + hurtT * .6})`;
+      }
+      ctx.drawImage(img, fr.sx, fr.sy, fr.sw, fr.sh, dx, dy, Math.round(spriteW), Math.round(spriteH));
+      ctx.filter = 'none';
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    };
+
+    drawFrame(frA, 1);
+
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '950 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,.72)';
+    ctx.lineWidth = 5;
+    ctx.strokeText('בן', player.x, dy + 15);
+    ctx.fillText('בן', player.x, dy + 15);
+    ctx.restore();
+    return true;
+  }
+
+  function getPaperBodyImage(){
+    const armor = getEquippedArmor();
+    const armorId = armor && PAPER_BODY_ASSETS[armor.id] ? armor.id : 'base';
+    const img = loadPaperImage(paperImages.bodies, armorId, PAPER_BODY_ASSETS[armorId] || PAPER_BODY_ASSETS.base);
+    return getPaperImageReady(img) ? img : null;
+  }
+  function getPaperSheetFrame(img, frameIndex){
+    const cols = 4;
+    const rows = 2;
+    const oneFrameW = img.naturalWidth / cols;
+    const oneFrameH = img.naturalHeight / rows;
+    const safeFrame = Math.max(0, Math.min(cols * rows - 1, frameIndex));
+    const col = safeFrame % cols;
+    const row = Math.floor(safeFrame / cols);
+    return {sx:col * oneFrameW, sy:row * oneFrameH, sw:oneFrameW, sh:oneFrameH, rows};
+  }
+  function getPaperFrameBlend(){
+    const attacking = player.swing > 0;
+    if(attacking){
+      const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
+      const eased = 0.5 - Math.cos(attackProgress * Math.PI) * 0.5;
+      const pos = 4 + eased * 3;
+      const current = Math.max(4, Math.min(7, Math.round(pos)));
+      return { current, next:current, alpha:0 };
+    }
+    const current = Math.floor(time * 2.2) % 4;
+    return { current, next:current, alpha:0 };
+  }
+
+  function getPaperFrameIndex(){
+    const attacking = player.swing > 0;
+    if(attacking){
+      const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
+      return 4 + Math.min(3, Math.floor(attackProgress * 4));
+    }
+    return Math.floor(time * 2.2) % 4;
+  }
+
+  function usesWeaponHandSheet(weaponId){
+    return !!PAPER_WEAPON_HAND_ROWS[weaponId];
+  }
+  function getWeaponHandState(frameIndex){
+    if(frameIndex < 4) return 0;
+    if(frameIndex === 4) return 1;
+    if(frameIndex === 5 || frameIndex === 6) return 2;
+    return 3;
+  }
+  function drawPaperWeaponFromHandSheet(dx, dy, bodyW, bodyH, weaponId, frameIndex){
+    if(!usesWeaponHandSheet(weaponId)) return false;
+    const sheet = paperImages.weaponHands.sheet;
+    if(!getPaperImageReady(sheet)) return false;
+    const row = PAPER_WEAPON_HAND_ROWS[weaponId];
+    const state = getWeaponHandState(frameIndex);
+    const cols = 4;
+    const rows = 8;
+    const sw = sheet.naturalWidth / cols;
+    const sh = sheet.naturalHeight / rows;
+    const sx = state * sw;
+    const sy = row * sh;
+    const anchor = PAPER_WEAPON_HAND_ANCHORS[frameIndex] || PAPER_WEAPON_HAND_ANCHORS[0];
+    const tune = PAPER_WEAPON_HAND_TUNE[weaponId] || {dx:0,dy:0,scale:1};
+    const dh = Math.max(48, bodyH * (anchor.scale || .42) * (tune.scale || 1));
+    const dw = dh * (sw / sh);
+    const wristX = anchor.wristX || .20;
+    const wristY = anchor.wristY || .78;
+    const targetX = dx + bodyW * ((anchor.x || .29) + (tune.dx || 0));
+    const targetY = dy + bodyH * ((anchor.y || .64) + (tune.dy || 0));
+    const drawX = targetX - dw * wristX;
+    const drawY = targetY - dh * wristY;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(sheet, sx, sy, sw, sh, drawX, drawY, dw, dh);
+    ctx.restore();
+    return true;
+  }
+
+  function drawPaperWeaponEffect(dx, dy, bodyW, bodyH, weaponId, frameIndex){
+    const box = PAPER_EFFECT_BOXES[frameIndex];
+    if(!box || weaponId === 'wood_stick') return;
+    const img = paperImages.effects[weaponId];
+    if(!getPaperImageReady(img)) return;
+    const tw = bodyW * box.w;
+    const th = tw * (img.naturalHeight / img.naturalWidth);
+    ctx.save();
+    ctx.globalAlpha = box.alpha;
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, dx + bodyW * box.x, dy + bodyH * box.y, tw, th);
+    ctx.restore();
+  }
+  function drawPaperWeapon(dx, dy, bodyW, bodyH, weaponId, frameIndex){
+    if(drawPaperWeaponFromHandSheet(dx, dy, bodyW, bodyH, weaponId, frameIndex)) return;
+    const img = paperImages.weapons[weaponId] || paperImages.weapons.wood_stick;
+    if(!getPaperImageReady(img)) return;
+    const hand = PAPER_HAND_POINTS[frameIndex] || PAPER_HAND_POINTS[0];
+    const grip = PAPER_WEAPON_GRIPS[weaponId] || PAPER_WEAPON_GRIPS.wood_stick;
+    const tune = PAPER_WEAPON_TUNING[weaponId] || PAPER_WEAPON_TUNING.wood_stick;
+    const nudge = PAPER_FRAME_NUDGES[frameIndex] || PAPER_FRAME_NUDGES[0];
+    const cat = PAPER_WEAPON_CATEGORIES[weaponId] || 'club';
+    const baseH = cat === 'energy' ? .40 : cat === 'sword' ? .36 : cat === 'axe' ? .34 : cat === 'blade' ? .31 : .33;
+    const phaseScale = frameIndex >= 4 ? (tune.attackScale || 1) : (tune.idleScale || 1);
+    const targetH = Math.max(28, bodyH * baseH * hand.scale * grip.scale * phaseScale);
+    const targetW = targetH * (img.naturalWidth / img.naturalHeight);
+    const x = dx + bodyW * (hand.x + (tune.x || 0) + (nudge.x || 0));
+    const y = dy + bodyH * (hand.y + (tune.y || 0) + (nudge.y || 0));
+    const angle = (hand.rot + (tune.rot || 0) + (nudge.rot || 0)) * Math.PI / 180;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    if(weaponId === 'plasma_blade'){
+      ctx.shadowColor = 'rgba(255,214,94,.85)'; ctx.shadowBlur = 16;
+    }else if(weaponId === 'scrap_sword'){
+      ctx.shadowColor = 'rgba(174,96,255,.55)'; ctx.shadowBlur = 10;
+    }else if(weaponId === 'shock_axe'){
+      ctx.shadowColor = 'rgba(95,177,255,.55)'; ctx.shadowBlur = 10;
+    }else if(weaponId === 'reinforced_bone'){
+      ctx.shadowColor = 'rgba(130,220,255,.45)'; ctx.shadowBlur = 8;
+    }
+    ctx.drawImage(img, -targetW * grip.x, -targetH * grip.y, targetW, targetH);
+    // small wrist cover helps blend the weapon grip into Ben's hand.
+    ctx.fillStyle = 'rgba(79,48,26,.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, Math.max(6, bodyW * 0.012), Math.max(5, bodyH * 0.010), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  const HERO_SHEET_COLS = 4;
+  const HERO_SHEET_ROWS = 2;
+  const HERO_SOURCE_INSET = 6;
+  const HERO_FRAME_PADDING = 10;
+
+  function cleanSpriteCanvas(frameCanvas){
+    const frameCtx = frameCanvas.getContext('2d', { alpha: true });
+    const w = frameCanvas.width;
+    const h = frameCanvas.height;
+    const img = frameCtx.getImageData(0, 0, w, h);
+    const data = img.data;
+    for(let i = 0; i < data.length; i += 4){
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      if(a === 0) continue;
+      const avg = (r + g + b) / 3;
+      const spread = Math.max(r,g,b) - Math.min(r,g,b);
+      if(avg > 240 && spread < 24){ data[i+3] = 0; continue; }
+      if(avg > 214 && spread < 62){
+        let near = false;
+        const px = (i/4) % w;
+        const py = Math.floor((i/4) / w);
+        for(let ny = Math.max(0, py-1); ny <= Math.min(h-1, py+1) && !near; ny++) {
+          for(let nx = Math.max(0, px-1); nx <= Math.min(w-1, px+1); nx++) {
+            if(data[(ny * w + nx) * 4 + 3] === 0){ near = true; break; }
+          }
+        }
+        if(near) data[i+3] = avg > 232 ? 0 : Math.round(a * 0.4);
+      }
+    }
+    frameCtx.putImageData(img, 0, 0);
+    return frameCanvas;
+  }
+
+  function trimFrameCanvas(frameCanvas, padding = HERO_FRAME_PADDING){
+    const frameCtx = frameCanvas.getContext('2d', { alpha: true });
+    const w = frameCanvas.width;
+    const h = frameCanvas.height;
+    const pixels = frameCtx.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for(let y = 0; y < h; y++){
+      for(let x = 0; x < w; x++){
+        const alpha = pixels[(y * w + x) * 4 + 3];
+        if(alpha > 18){
+          if(x < minX) minX = x;
+          if(y < minY) minY = y;
+          if(x > maxX) maxX = x;
+          if(y > maxY) maxY = y;
+        }
+      }
+    }
+    if(maxX < minX || maxY < minY) return frameCanvas;
+    const trimW = maxX - minX + 1;
+    const trimH = maxY - minY + 1;
+    const out = document.createElement('canvas');
+    out.width = trimW + padding * 2;
+    out.height = trimH + padding * 2;
+    const outCtx = out.getContext('2d', { alpha: true });
+    outCtx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in outCtx) outCtx.imageSmoothingQuality = 'high';
+    outCtx.clearRect(0, 0, out.width, out.height);
+    outCtx.drawImage(frameCanvas, minX, minY, trimW, trimH, padding, padding, trimW, trimH);
+    return out;
+  }
+
+  function buildHeroFrames(){
+    heroFrames.idle.length = 0;
+    heroFrames.attack.length = 0;
+    if(!heroSheet.naturalWidth || !heroSheet.naturalHeight) return;
+
+    const frameW = Math.floor(heroSheet.naturalWidth / HERO_SHEET_COLS);
+    const frameH = Math.floor(heroSheet.naturalHeight / HERO_SHEET_ROWS);
+    const scratch = document.createElement('canvas');
+    scratch.width = heroSheet.naturalWidth;
+    scratch.height = heroSheet.naturalHeight;
+    const scratchCtx = scratch.getContext('2d', { alpha: true });
+    scratchCtx.imageSmoothingEnabled = false;
+    scratchCtx.clearRect(0, 0, scratch.width, scratch.height);
+    scratchCtx.drawImage(heroSheet, 0, 0);
+
+    const inset = Math.max(0, Math.min(HERO_SOURCE_INSET, Math.floor(Math.min(frameW, frameH) * 0.11)));
+    const cropW = Math.max(1, frameW - inset * 2);
+    const cropH = Math.max(1, frameH - inset * 2);
+
+    for(let row = 0; row < HERO_SHEET_ROWS; row++){
+      for(let col = 0; col < HERO_SHEET_COLS; col++){
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = cropW + HERO_FRAME_PADDING * 2;
+        frameCanvas.height = cropH + HERO_FRAME_PADDING * 2;
+        const frameCtx = frameCanvas.getContext('2d', { alpha: true });
+        frameCtx.imageSmoothingEnabled = false;
+        frameCtx.clearRect(0, 0, frameCanvas.width, frameCanvas.height);
+        frameCtx.drawImage(
+          scratch,
+          col * frameW + inset,
+          row * frameH + inset,
+          cropW,
+          cropH,
+          HERO_FRAME_PADDING,
+          HERO_FRAME_PADDING,
+          cropW,
+          cropH
+        );
+        cleanSpriteCanvas(frameCanvas);
+        const cleanFrame = trimFrameCanvas(frameCanvas, HERO_FRAME_PADDING + 2);
+        if(row === 0) heroFrames.idle.push(cleanFrame);
+        else heroFrames.attack.push(cleanFrame);
+      }
+    }
+  }
+
+  heroSheet.onload = () => {
+    buildHeroFrames();
+    heroSheetReady = heroFrames.idle.length === HERO_SHEET_COLS && heroFrames.attack.length === HERO_SHEET_COLS;
+  };
+  heroSheet.onerror = () => {
+    heroSheetReady = false;
+    heroFrames.idle.length = 0;
+    heroFrames.attack.length = 0;
+  };
+  heroSheet.src = `assets/images/img_019_654955ec97.webp`;
+  const ATTACK_DURATION = 0.44;
+  const ENEMY_ATTACK_ANIM_DURATION = 0.34;
+  const ENEMY_HIT_FLASH_DURATION = 0.24;
+
+  const ENEMY_SHEET_DATA = {
+    "alien_scout": "assets/enemies/alien_scout.png",
+    "alien_raider": "assets/enemies/alien_raider.png",
+    "alien_mage": "assets/enemies/alien_mage.png",
+    "alien_hunter": "assets/enemies/alien_hunter.png",
+    "goblin_raider": "assets/enemies/goblin_raider.png",
+    "spike_beast": "assets/enemies/spike_beast.png",
+    "demon_fighter": "assets/enemies/demon_fighter.png",
+    "shadow_demon": "assets/enemies/shadow_demon.png",
+    "mini_overseer": "assets/enemies/mini_overseer.png",
+    "boss_ogre": "assets/enemies/boss_ogre.png",
+    "boss_necromancer": "assets/enemies/boss_necromancer.png",
+    "final_tyrant": "assets/enemies/final_tyrant.png"
+  };
+
+
+  const ENEMY_FRAMES = [[0,0],[1,0],[0,1],[1,1]];
+  const enemySheetImages = {};
+
+  function preloadEnemySheets(){
+    Object.entries(ENEMY_SHEET_DATA).forEach(([key, src]) => {
+      if(!src) return;
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+      enemySheetImages[key] = img;
+    });
+  }
+  preloadEnemySheets();
+
+  const ENEMY_LIBRARY = {
+    alien_scout:      { key:'alien_scout',      name:'חייזר סקאוט',        type:'alien',   icon:'👽', sheet:'alien_scout',      r:52, scale:1.08, tint:'#6cf6ff', hp:76,  damage:8,  attackEvery:1.55, reward:1.00 },
+    alien_raider:     { key:'alien_raider',     name:'חייזר ריידר',        type:'alien',   icon:'🛸', sheet:'alien_raider',     r:54, scale:1.10, tint:'#72e8ff', hp:88,  damage:10, attackEvery:1.48, reward:1.05 },
+    alien_mage:       { key:'alien_mage',       name:'חייזר קוסם',         type:'alien',   icon:'☄️', sheet:'alien_mage',       r:56, scale:1.12, tint:'#7cfaff', hp:96,  damage:11, attackEvery:1.42, reward:1.10 },
+    alien_hunter:     { key:'alien_hunter',     name:'חייזר צייד',         type:'alien',   icon:'👾', sheet:'alien_hunter',     r:56, scale:1.14, tint:'#89f5ff', hp:104, damage:12, attackEvery:1.36, reward:1.12 },
+    goblin_raider:    { key:'goblin_raider',    name:'גובלין סגול',         type:'monster', icon:'😈', sheet:'goblin_raider',    r:54, scale:1.10, tint:'#b06cff', hp:86,  damage:9,  attackEvery:1.52, reward:1.04 },
+    spike_beast:      { key:'spike_beast',      name:'מפלצת קוצים',         type:'monster', icon:'👹', sheet:'spike_beast',      r:58, scale:1.14, tint:'#8dff96', hp:102, damage:11, attackEvery:1.40, reward:1.12 },
+    demon_fighter:    { key:'demon_fighter',    name:'שד לוחם',            type:'monster', icon:'🔥', sheet:'demon_fighter',    r:58, scale:1.16, tint:'#ff7da0', hp:110, damage:12, attackEvery:1.34, reward:1.16 },
+    shadow_demon:     { key:'shadow_demon',     name:'שד צללים',           type:'monster', icon:'💀', sheet:'shadow_demon',     r:60, scale:1.18, tint:'#d08cff', hp:118, damage:13, attackEvery:1.30, reward:1.18 },
+    mini_overseer:    { key:'mini_overseer',    name:'אוברסיר חללי',       type:'alien',   icon:'🛸', sheet:'mini_overseer',    r:64, scale:1.24, tint:'#65eaff', hp:170, damage:16, attackEvery:1.20, reward:1.55, role:'mini' },
+    mini_shadowlord:  { key:'mini_shadowlord',  name:'לורד הצללים',        type:'monster', icon:'👿', sheet:'shadow_demon',     r:66, scale:1.26, tint:'#d98aff', hp:210, damage:18, attackEvery:1.14, reward:1.65, role:'mini' },
+    boss_ogre:        { key:'boss_ogre',        name:'אוגר השמדה',         type:'boss',    icon:'👹', sheet:'boss_ogre',        r:74, scale:1.36, tint:'#ff6e87', hp:310, damage:22, attackEvery:1.10, reward:2.10, role:'boss' },
+    boss_necromancer: { key:'boss_necromancer', name:'נקרומנסר אפל',       type:'boss',    icon:'☠️', sheet:'boss_necromancer', r:78, scale:1.40, tint:'#58adff', hp:380, damage:25, attackEvery:1.02, reward:2.35, role:'boss' },
+    final_tyrant:     { key:'final_tyrant',     name:'טיראנט התהום',       type:'boss',    icon:'👑', sheet:'final_tyrant',     r:84, scale:1.52, tint:'#ff4f6d', hp:520, damage:30, attackEvery:.94, reward:3.20, role:'final' }
+  };
+
+  const WORLD1_ROUNDS = [
+    {key:'alien_scout'},
+    {key:'goblin_raider'},
+    {key:'alien_raider'},
+    {key:'spike_beast'},
+    {key:'mini_overseer'},
+    {key:'alien_mage'},
+    {key:'spike_beast'},
+    {key:'alien_hunter'},
+    {key:'demon_fighter'},
+    {key:'boss_ogre'},
+    {key:'goblin_raider'},
+    {key:'alien_mage'},
+    {key:'shadow_demon'},
+    {key:'alien_hunter'},
+    {key:'mini_shadowlord'},
+    {key:'alien_raider'},
+    {key:'demon_fighter'},
+    {key:'shadow_demon'},
+    {key:'spike_beast'},
+    {key:'boss_necromancer'},
+    {key:'alien_hunter'},
+    {key:'shadow_demon'},
+    {key:'demon_fighter'},
+    {key:'alien_mage'},
+    {key:'final_tyrant'}
+  ];
+
+  function getEncounter(roundIndex){
+    return WORLD1_ROUNDS[Math.max(0, Math.min(WORLD1_ROUNDS.length - 1, roundIndex))];
+  }
+
+  function getEnemyTemplate(key){
+    return ENEMY_LIBRARY[key] || ENEMY_LIBRARY.alien_scout;
+  }
+
+  function computeEnemyStats(template, roundNumber){
+    const role = template.role || 'normal';
+    const difficulty = 1 + (roundNumber - 1) * 0.085;
+    const roleHpMul = role === 'mini' ? 1.35 : role === 'boss' ? 1.9 : role === 'final' ? 2.5 : 1;
+    const roleDmgMul = role === 'mini' ? 1.20 : role === 'boss' ? 1.45 : role === 'final' ? 1.75 : 1;
+    const hp = Math.round(template.hp * difficulty * roleHpMul);
+    const damage = Math.round(template.damage * (1 + (roundNumber - 1) * 0.06) * roleDmgMul);
+    const attackEvery = Math.max(.72, template.attackEvery - (roundNumber - 1) * 0.010);
+    return {hp, damage, attackEvery};
+  }
+
+  function getEnemyFrameIndex(e){
+    if(e.dead) return 3;
+    if(e.attackAnim > 0){
+      const progress = 1 - e.attackAnim / ENEMY_ATTACK_ANIM_DURATION;
+      return progress < .45 ? 2 : 3;
+    }
+    if(e.hit > 0) return 3;
+    return Math.floor(e.animClock * 5.2) % 2;
+  }
+
+  function getEnemyFrameBlend(e){
+    const frame = getEnemyFrameIndex(e);
+    return {current:frame, next:frame, alpha:0};
+  }
+
+  function drawEnemyFromSheet(e){
+    if(!e.sheetKey) return false;
+    const img = enemySheetImages[e.sheetKey];
+    if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+    const blend = getEnemyFrameBlend(e);
+    const frameW = img.naturalWidth / 2;
+    const frameH = img.naturalHeight / 2;
+    const inset = 2;
+    const dx = -e.drawW / 2;
+    const dy = -e.drawH * .78;
+    const prevSmooth = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    const drawFrame = (frameIndex, alpha) => {
+      if(alpha <= 0.001) return;
+      const [fx, fy] = ENEMY_FRAMES[frameIndex] || ENEMY_FRAMES[0];
+      ctx.save();
+      ctx.globalAlpha *= alpha;
+      ctx.drawImage(img, fx * frameW + inset, fy * frameH + inset, Math.max(1, frameW - inset*2), Math.max(1, frameH - inset*2), dx, dy, e.drawW, e.drawH);
+      ctx.restore();
+    };
+    drawFrame(blend.current, 1);
+    ctx.imageSmoothingEnabled = prevSmooth;
+    return true;
+  }
+
+  const enemyTintCanvas = document.createElement('canvas');
+  const enemyTintCtx = enemyTintCanvas.getContext('2d');
+
+  function drawEnemyTintOverlay(e, alpha){
+    if(!e.sheetKey || !enemyTintCtx) return false;
+    const img = enemySheetImages[e.sheetKey];
+    if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+    const frame = getEnemyFrameIndex(e);
+    const [fx, fy] = ENEMY_FRAMES[frame] || ENEMY_FRAMES[0];
+    const frameW = img.naturalWidth / 2;
+    const frameH = img.naturalHeight / 2;
+    const inset = 2;
+    const w = Math.max(1, Math.ceil(e.drawW));
+    const h = Math.max(1, Math.ceil(e.drawH));
+    if(enemyTintCanvas.width !== w || enemyTintCanvas.height !== h){
+      enemyTintCanvas.width = w;
+      enemyTintCanvas.height = h;
+    }
+    enemyTintCtx.clearRect(0, 0, w, h);
+    enemyTintCtx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in enemyTintCtx) enemyTintCtx.imageSmoothingQuality = 'high';
+    enemyTintCtx.drawImage(img, fx * frameW + inset, fy * frameH + inset, Math.max(1, frameW - inset*2), Math.max(1, frameH - inset*2), 0, 0, w, h);
+    enemyTintCtx.globalCompositeOperation = 'source-atop';
+    enemyTintCtx.fillStyle = '#ff1f3d';
+    enemyTintCtx.fillRect(0, 0, w, h);
+    enemyTintCtx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.drawImage(enemyTintCanvas, -e.drawW / 2, -e.drawH * .78, e.drawW, e.drawH);
+    ctx.restore();
+    return true;
+  }
+
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0;
+  let H = 0;
+  let running = false;
+  let gameOver = false;
+  let lastTime = 0;
+  let time = 0;
+  let stars = [];
+  let particles = [];
+  let damageTexts = [];
+  let slash = null;
+  let enemy = null;
+  let nextEnemyDelay = 0;
+  let screenShake = 0;
+
+  const player = {
+    name: 'בן',
+    x: 0,
+    y: 0,
+    hp: 100,
+    maxHp: 100,
+    baseMaxHp: 100,
+    level: 1,
+    xp: 0,
+    xpNeed: 100,
+    gameLevel: 1,
+    gameXp: 0,
+    gameXpNeed: 140,
+    coins: 0,
+    gems: 2400,
+    weaponLevel: 1,
+    armorLevel: 1,
+    damage: 22,
+    baseDamage: 18,
+    cooldown: 0,
+    swing: 0,
+    hurt: 0,
+    kills: 0
+  };
+
+  const state = {
+    world: 1,
+    stage: 1,
+    enemyNumber: 0,
+    roundIndex: 0,
+    round: 1,
+    totalRounds: WORLD1_ROUNDS.length,
+    victoryPending: false,
+    message: 'לחץ על התחל משחק',
+    messageTime: 0
+  };
+
+  function resize(){
+    W = Math.max(320, Math.floor(window.innerWidth));
+    H = Math.max(480, Math.floor(window.innerHeight));
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    player.x = W * 0.50;
+    player.y = H * 0.69;
+    if(enemy){
+      enemy.baseX = W * 0.50;
+      enemy.baseY = H * 0.35;
+      enemy.x = enemy.baseX;
+      enemy.y = enemy.baseY;
+    }
+    const count = Math.floor((W * H) / 14500);
+    stars = Array.from({length: count}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + .35,
+      a: Math.random() * .55 + .15
+    }));
+  }
+
+  window.addEventListener('resize', resize, {passive:true});
+  resize();
+
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+  function lerp(a, b, t){ return a + (b - a) * t; }
+  function rnd(a, b){ return Math.random() * (b - a) + a; }
+  function distance(x1, y1, x2, y2){ return Math.hypot(x1 - x2, y1 - y2); }
+
+  function beginGame(event){
+    if(event && event.cancelable) event.preventDefault();
+    if(event && event.stopPropagation) event.stopPropagation();
+
+    // בטיחות לטלפון: גם אם click/pointer/touch יורים כמה פעמים, מתחילים רק פעם אחת.
+    const alreadyPlaying = startScreen.classList.contains('hidden') && running && !gameOver;
+    if(alreadyPlaying) return false;
+
+    startScreen.classList.add('hidden');
+    startScreen.style.display = 'none';
+    tapHint.classList.remove('hidden');
+    tapHint.style.display = 'block';
+    if(mainMenuOverlay) closeMainMenu();
+    if(inventoryOverlay) closeInventory();
+    resetGame();
+    return false;
+  }
+
+  // כפתור התחלה חזק יותר: עובד ב-click, touch, pointer וגם בלחיצה על כל מסך הפתיחה.
+  window.BEN_START_GAME = beginGame;
+  ['click','pointerdown','pointerup','touchstart','mousedown'].forEach(type => {
+    startBtn.addEventListener(type, beginGame, {passive:false});
+    startScreen.addEventListener(type, beginGame, {passive:false});
+  });
+
+  // גיבוי: אם הדפדפן שבתוך האפליקציה לא מעביר אירוע לכפתור, נגיעה ראשונה במסמך תתחיל.
+  ['touchstart','pointerdown','click'].forEach(type => {
+    document.addEventListener(type, function(e){
+      if(!running && !gameOver && !startScreen.classList.contains('hidden')) beginGame(e);
+    }, {passive:false});
+  });
+
+  function resetGame(){
+    running = true;
+    gameOver = false;
+    particles = [];
+    damageTexts = [];
+    slash = null;
+    enemy = null;
+    nextEnemyDelay = 0;
+    screenShake = 0;
+    Object.assign(player, {
+      x: W * .50,
+      y: H * .69,
+      hp: 100,
+      maxHp: 100,
+      baseMaxHp: 100,
+      level: 1,
+      xp: 0,
+      xpNeed: 100,
+      gameLevel: 1,
+      gameXp: 0,
+      gameXpNeed: 140,
+      coins: 0,
+      gems: 2400,
+      weaponLevel: 1,
+      armorLevel: 1,
+      damage: 22,
+      baseDamage: 18,
+      cooldown: 0,
+      swing: 0,
+      hurt: 0,
+      kills: 0
+    });
+    resetQuestProgress();
+    Object.assign(state, {
+      world: 1,
+      stage: 1,
+      enemyNumber: 0,
+      roundIndex: 0,
+      round: 1,
+      totalRounds: WORLD1_ROUNDS.length,
+      victoryPending: false,
+      message: 'World 1 התחיל — לחץ על האויב שמול בן!',
+      messageTime: 2.4
+    });
+    inventoryState.equippedWeapon = 'wood_stick';
+    inventoryState.equippedArmor = 'survivor_armor';
+    applyEquipmentStats(true);
+    loadGameForCurrentUser();
+    spawnEnemy();
+    updateHUD();
+  }
+
+  function spawnEnemy(){
+    const encounter = getEncounter(state.roundIndex);
+    const template = getEnemyTemplate(encounter.key);
+    const roundNumber = state.roundIndex + 1;
+    state.round = roundNumber;
+    state.stage = roundNumber;
+    state.enemyNumber = roundNumber;
+    const stats = computeEnemyStats(template, roundNumber);
+    const role = template.role || 'normal';
+    const hitRadius = Math.round(template.r * (role === 'final' ? 2.25 : role === 'boss' ? 2.0 : role === 'mini' ? 1.85 : 1.7));
+    enemy = {
+      templateKey: template.key,
+      sheetKey: template.sheet,
+      type: template.type,
+      role,
+      name: template.name,
+      icon: template.icon,
+      tint: template.tint,
+      baseX: W * .50,
+      baseY: H * .35,
+      x: W * .50,
+      y: H * .35,
+      r: template.r,
+      drawW: Math.round(template.r * 3.4 * template.scale),
+      drawH: Math.round(template.r * 3.4 * template.scale),
+      hitRadius,
+      hp: stats.hp,
+      maxHp: stats.hp,
+      damage: stats.damage,
+      reward: template.reward || 1,
+      attackTimer: Math.max(.82, stats.attackEvery * .92),
+      attackEvery: stats.attackEvery,
+      hit: 0,
+      dead: false,
+      death: 0,
+      bobOffset: Math.random() * Math.PI * 2,
+      blink: 0,
+      blinkCooldown: rnd(1.2, 3.0),
+      attackAnim: 0,
+      animClock: Math.random() * 10,
+      swaySize: role === 'final' ? 16 : role === 'boss' ? 14 : role === 'mini' ? 12 : template.type === 'alien' ? 9 : 11,
+      statusEffects: {}
+    };
+    const roleLabel = role === 'final' ? 'פיינל בוס' : role === 'boss' ? 'בוס' : role === 'mini' ? 'מיני בוס' : 'אויב';
+    state.message = 'World 1 · Round ' + roundNumber + '/' + state.totalRounds + ' · ' + roleLabel;
+    state.messageTime = 1.25;
+    showText(enemy.x, enemy.y - enemy.r - 35, enemy.name + '!', '#ffd166', 20);
+    burst(enemy.x, enemy.y, enemy.tint || (template.type === 'alien' ? '#6cf6ff' : '#6dff82'), role === 'final' ? 34 : role === 'boss' ? 28 : role === 'mini' ? 22 : 18);
+    updateHUD();
+  }
+
+  function pointerPosition(evt){
+    const rect = canvas.getBoundingClientRect();
+    const p = evt.touches ? evt.touches[0] : evt;
+    return {x: p.clientX - rect.left, y: p.clientY - rect.top};
+  }
+
+  function handleTap(evt){
+    if(!running || gameOver || !enemy) return;
+    evt.preventDefault();
+    const p = pointerPosition(evt);
+    const hitRadius = enemy.hitRadius || (enemy.r + 34);
+    if(distance(p.x, p.y, enemy.x, enemy.y) <= hitRadius){
+      attackEnemy();
+    }else{
+      state.message = 'צריך ללחוץ על האויב עצמו';
+      state.messageTime = 1.1;
+      burst(p.x, p.y, '#ffffff', 5);
+    }
+  }
+
+  canvas.addEventListener('pointerdown', handleTap, {passive:false});
+  canvas.addEventListener('touchstart', function(e){ e.preventDefault(); }, {passive:false});
+
+  function attackEnemy(){
+    if(player.cooldown > 0 || !enemy || enemy.dead) return;
+    const weapon = getEquippedWeapon();
+    player.cooldown = Math.max(.16, weapon.cooldown - player.weaponLevel * .018);
+    player.swing = ATTACK_DURATION;
+    slash = {life:.20, max:.20, x1:player.x, y1:player.y - 18, x2:enemy.x, y2:enemy.y};
+    const crit = Math.random() < Math.min(weapon.crit + player.weaponLevel * .012, .34);
+    const dmg = Math.round(player.damage * rnd(.86, 1.18) * (crit ? 1.85 : 1));
+    enemy.hp -= dmg;
+    questState.stats.hits += 1;
+    enemy.hit = ENEMY_HIT_FLASH_DURATION;
+    screenShake = Math.max(screenShake, crit ? 8 : 4);
+    showText(enemy.x + rnd(-20,20), enemy.y - enemy.r - 10, (crit ? 'קריט! ' : '') + '-' + dmg, crit ? '#ffd166' : '#ffffff', crit ? 22 : 18);
+    burst(enemy.x, enemy.y, enemy.type === 'alien' ? '#6cf6ff' : enemy.type === 'boss' ? '#ff5c7a' : '#6dff82', crit ? 18 : 11);
+    applyWeaponStatusEffects(weapon);
+    if(enemy.hp <= 0){
+      enemy.hp = 0;
+      killEnemy();
+    }
+    updateHUD();
+  }
+
+  function killEnemy(){
+    if(!enemy || enemy.dead) return;
+    enemy.dead = true;
+    enemy.death = .48;
+    const role = enemy.role || 'normal';
+    const rewardMul = enemy.reward || 1;
+    const rewardCoins = Math.round((role === 'final' ? 260 : role === 'boss' ? 140 : role === 'mini' ? 78 : 18 + state.round * 3) * rewardMul);
+    const rewardXp = Math.round((role === 'final' ? 320 : role === 'boss' ? 170 : role === 'mini' ? 92 : 24 + state.round * 6) * (1 + state.round * .02));
+    player.kills += 1;
+    questState.stats.kills += 1;
+    if(role === 'boss' || role === 'final') questState.stats.bosses += 1;
+    if(role === 'mini') questState.stats.miniBosses += 1;
+    questState.stats.highestRound = Math.max(questState.stats.highestRound, state.round);
+    addCoins(rewardCoins, 'enemy');
+    addXp(rewardXp);
+    showText(enemy.x, enemy.y, '+' + rewardCoins + ' 🪙', '#ffd166', 18);
+    burst(enemy.x, enemy.y, '#ffd166', role === 'final' ? 38 : role === 'boss' ? 30 : 24);
+    if(state.roundIndex >= state.totalRounds - 1){
+      state.victoryPending = true;
+    }else{
+      state.roundIndex += 1;
+    }
+    nextEnemyDelay = .85;
+  }
+
+  function addXp(amount){
+    player.xp += amount;
+    addGameXp(Math.max(1, Math.round(amount * .42)));
+    while(player.xp >= player.xpNeed){
+      player.xp -= player.xpNeed;
+      player.level += 1;
+      player.xpNeed = Math.round(player.xpNeed * 1.28);
+      player.maxHp += 14;
+      player.hp = Math.min(player.maxHp, player.hp + 35);
+      applyEquipmentStats(false);
+      showText(player.x, player.y - 85, 'רמה ' + player.level + '!', '#58adff', 24);
+      burst(player.x, player.y - 30, '#58adff', 24);
+    }
+    saveGame('xp');
+  }
+
+  function addGameXp(amount){
+    player.gameXp += amount;
+    while(player.gameXp >= player.gameXpNeed){
+      player.gameXp -= player.gameXpNeed;
+      player.gameLevel += 1;
+      player.gameXpNeed = Math.round(player.gameXpNeed * 1.32);
+      showText(player.x, player.y - 110, 'לבל כללי ' + player.gameLevel + '!', '#9dffbe', 22);
+      burst(player.x, player.y - 45, '#9dffbe', 20);
+    }
+    saveGame('game-xp');
+  }
+
+  function enemyAttack(){
+    if(!enemy || enemy.dead || gameOver) return;
+    enemy.attackTimer = enemy.attackEvery;
+    enemy.attackAnim = ENEMY_ATTACK_ANIM_DURATION;
+    const armor = getEquippedArmor();
+    const reduction = Math.min(armor.defense + (player.armorLevel - 1) * .035, .68);
+    const dmg = Math.max(1, Math.round(enemy.damage * (1 - reduction)));
+    player.hp -= dmg;
+    player.hurt = .26;
+    screenShake = Math.max(screenShake, 7);
+    showText(player.x, player.y - 70, '-' + dmg, '#ff4f6d', 18);
+    burst(player.x, player.y - 25, '#ff4f6d', 11);
+    if(player.hp <= 0){
+      player.hp = 0;
+      endGame();
+    }
+  }
+
+  weaponBtn.addEventListener('click', () => buyUpgrade('weapon'));
+  armorBtn.addEventListener('click', () => buyUpgrade('armor'));
+  healBtn.addEventListener('click', () => buyUpgrade('heal'));
+
+  function weaponCost(){ return 30 + (getEquippedLevel('weapon') - 1) * 38; }
+  function armorCost(){ return 35 + (getEquippedLevel('armor') - 1) * 42; }
+  function isAtMax(kind){ const item = getEquippedItem(kind); return getItemLevel(kind, item) >= getMaxLevelForItem(item); }
+
+  function buyUpgrade(kind){
+    if(!running || gameOver) return;
+    if(kind === 'weapon'){
+      const weapon = getEquippedWeapon();
+      const maxLevel = getMaxLevelForItem(weapon);
+      const currentLevel = getItemLevel('weapon', weapon);
+      if(currentLevel >= maxLevel){ showText(W/2, H - 145, 'הנשק הגיע למקס לבל', '#ffd166', 18); return; }
+      const cost = weaponCost();
+      if(player.coins < cost) return;
+      player.coins -= cost;
+      setItemLevel('weapon', weapon, currentLevel + 1);
+      questState.stats.upgrades += 1;
+      player.weaponLevel = currentLevel + 1;
+      applyEquipmentStats(false);
+      addGameXp(8);
+      showText(W/2, H - 145, getWeaponName() + ' התחזק!', '#ffd166', 18);
+      burst(player.x + 38, player.y - 20, '#ffd166', 18);
+    }
+    if(kind === 'armor'){
+      const armor = getEquippedArmor();
+      const maxLevel = getMaxLevelForItem(armor);
+      const currentLevel = getItemLevel('armor', armor);
+      if(currentLevel >= maxLevel){ showText(W/2, H - 145, 'הארמור הגיע למקס לבל', '#58adff', 18); return; }
+      const cost = armorCost();
+      if(player.coins < cost) return;
+      player.coins -= cost;
+      setItemLevel('armor', armor, currentLevel + 1);
+      questState.stats.upgrades += 1;
+      player.armorLevel = currentLevel + 1;
+      applyEquipmentStats(false);
+      addGameXp(8);
+      player.hp = Math.min(player.maxHp, player.hp + 35);
+      showText(W/2, H - 145, getArmorName() + ' התחזק!', '#58adff', 18);
+      burst(player.x, player.y - 20, '#58adff', 18);
+    }
+    if(kind === 'heal'){
+      const cost = 20;
+      if(player.coins < cost || player.hp >= player.maxHp) return;
+      player.coins -= cost;
+      questState.stats.heals += 1;
+      player.hp = Math.min(player.maxHp, player.hp + 55);
+      showText(W/2, H - 145, 'בן התרפא!', '#44f08d', 18);
+      burst(player.x, player.y - 30, '#44f08d', 16);
+    }
+    updateHUD();
+    if(!inventoryOverlay.classList.contains('hidden')) renderInventory();
+  }
+
+  function endGame(){
+    gameOver = true;
+    running = false;
+    tapHint.classList.add('hidden');
+    startScreen.style.display = 'block';
+    startScreen.classList.remove('hidden');
+    startScreen.innerHTML = '' +
+      '<h1>המשחק נגמר</h1>' +
+      '<p>בן ניצח <b>' + player.kills + '</b> אויבים והגיע ל-<b>World 1 · Round ' + state.round + '/' + state.totalRounds + '</b>.</p>' +
+      '<p>טיפ: אם מפלצות מורידות יותר מדי חיים, שדרג ארמור לפני הנשק.</p>' +
+      '<button id="againBtn" type="button" class="secondaryBtn" onclick="window.BEN_START_GAME && window.BEN_START_GAME(event)" ontouchstart="window.BEN_START_GAME && window.BEN_START_GAME(event)">שחק שוב</button>';
+    const againBtn = document.getElementById('againBtn');
+    ['click','pointerdown','pointerup','touchstart','mousedown'].forEach(type => {
+      againBtn.addEventListener(type, beginGame, {passive:false});
+    });
+  }
+
+  function showVictory(){
+    gameOver = true;
+    running = false;
+    tapHint.classList.add('hidden');
+    startScreen.style.display = 'block';
+    startScreen.classList.remove('hidden');
+    startScreen.innerHTML = '' +
+      '<h1>World 1 הושלם!</h1>' +
+      '<p>בן ניצח את <b>טיראנט התהום</b> וסיים את כל <b>25 הראונדים</b>.</p>' +
+      '<p>סה"כ אויבים שנוצחו: <b>' + player.kills + '</b> · מטבעות: <b>' + player.coins + '</b></p>' +
+      '<button id="againBtn" type="button" class="secondaryBtn" onclick="window.BEN_START_GAME && window.BEN_START_GAME(event)" ontouchstart="window.BEN_START_GAME && window.BEN_START_GAME(event)">שחק שוב</button>';
+    const againBtn = document.getElementById('againBtn');
+    ['click','pointerdown','pointerup','touchstart','mousedown'].forEach(type => {
+      againBtn.addEventListener(type, beginGame, {passive:false});
+    });
+  }
+
+  function updateHUD(){
+    coinsEl.textContent = '🪙 ' + player.coins;
+    if(gemsEl) gemsEl.textContent = '💎 ' + player.gems;
+    hpFill.style.width = clamp(player.hp / player.maxHp * 100, 0, 100) + '%';
+    hpText.textContent = 'חיים: ' + Math.ceil(player.hp) + '/' + player.maxHp;
+    xpFill.style.width = clamp(player.xp / player.xpNeed * 100, 0, 100) + '%';
+    levelText.textContent = 'דמות רמה ' + player.level + ' · כללי רמה ' + player.gameLevel + ' · XP ' + player.xp + '/' + player.xpNeed;
+    stageText.textContent = 'World ' + state.world + ' · Round ' + state.round + '/' + state.totalRounds;
+    enemyNameEl.textContent = enemy ? enemy.icon + ' ' + enemy.name : '---';
+
+    const wItem = getEquippedWeapon();
+    const aItem = getEquippedArmor();
+    const wRare = getRarityMeta(wItem.rarity);
+    const aRare = getRarityMeta(aItem.rarity);
+    gearText.textContent = wItem.name + ' · ' + wRare.label + ' · ' + aItem.name + ' · ' + aRare.label;
+    weaponTitle.textContent = wItem.name;
+    weaponSub.textContent = wRare.label + ' · רמה ' + getEquippedLevel('weapon') + '/' + getMaxLevelForItem(wItem);
+    armorTitle.textContent = aItem.name;
+    armorSub.textContent = aRare.label + ' · רמה ' + getEquippedLevel('armor') + '/' + getMaxLevelForItem(aItem);
+    if(menuGameLevel) menuGameLevel.textContent = player.gameLevel;
+    if(mainMenuOverlay && !mainMenuOverlay.classList.contains('hidden')) renderQuestPanels();
+    setGearBubble(weaponIcon, wItem, WEAPON_ICON_DATA);
+    setGearBubble(armorIcon, aItem, ARMOR_ICON_DATA);
+
+    const weaponMaxed = isAtMax('weapon');
+    const armorMaxed = isAtMax('armor');
+    weaponBtn.innerHTML = 'חזק נשק<br><span class="small">' + (weaponMaxed ? 'MAX ' + getMaxLevelForItem(wItem) : 'עלות: ' + weaponCost()) + '</span>';
+    armorBtn.innerHTML = 'חזק ארמור<br><span class="small">' + (armorMaxed ? 'MAX ' + getMaxLevelForItem(aItem) : 'עלות: ' + armorCost()) + '</span>';
+    healBtn.innerHTML = 'ריפוי<br><span class="small">עלות: 20</span>';
+    weaponBtn.disabled = weaponMaxed || player.coins < weaponCost();
+    armorBtn.disabled = armorMaxed || player.coins < armorCost();
+    healBtn.disabled = player.coins < 20 || player.hp >= player.maxHp;
+  }
+
+  function update(dt){
+    time += dt;
+    state.messageTime = Math.max(0, state.messageTime - dt);
+    screenShake = Math.max(0, screenShake - dt * 18);
+    player.cooldown = Math.max(0, player.cooldown - dt);
+    player.swing = Math.max(0, player.swing - dt);
+    player.hurt = Math.max(0, player.hurt - dt);
+
+    if(!running || gameOver){
+      updateParticles(dt);
+      return;
+    }
+
+    if(isAnyMenuOpen()){
+      updatePauseBadge();
+      updateParticles(dt);
+      return;
+    }
+
+    if(enemy){
+      enemy.animClock += dt;
+      enemy.hit = Math.max(0, enemy.hit - dt);
+      enemy.attackAnim = Math.max(0, enemy.attackAnim - dt);
+      enemy.blink = 0;
+      enemy.blinkCooldown = 999;
+
+      const floatSpeed = enemy.type === 'alien' ? 4.6 : enemy.role === 'final' ? 2.5 : enemy.type === 'boss' ? 2.9 : 3.5;
+      const bobAmount = enemy.type === 'alien' ? 6 : enemy.role === 'final' ? 11 : enemy.type === 'boss' ? 9 : 7;
+      const bob = Math.sin(time * floatSpeed + enemy.bobOffset) * bobAmount;
+      const sway = Math.sin(time * (floatSpeed * .45) + enemy.bobOffset) * enemy.swaySize;
+      const attackProgress = enemy.attackAnim > 0 ? 1 - enemy.attackAnim / ENEMY_ATTACK_ANIM_DURATION : 0;
+      const lunge = enemy.attackAnim > 0 ? Math.sin(attackProgress * Math.PI) : 0;
+      const recoil = enemy.hit > 0 ? Math.sin((1 - clamp(enemy.hit / ENEMY_HIT_FLASH_DURATION, 0, 1)) * Math.PI) : 0;
+
+      enemy.x = enemy.baseX + sway + lunge * 3;
+      enemy.y = enemy.baseY + bob + lunge * 16 - recoil * 6;
+
+      if(enemy.dead){
+        enemy.death -= dt;
+        if(enemy.death <= 0){
+          enemy = null;
+        }
+      }else{
+        updateEnemyStatuses(dt);
+        if(enemy && !enemy.dead){
+          const slowFactor = enemy.statusEffects && enemy.statusEffects.freeze ? 0.58 : 1;
+          enemy.attackTimer -= dt * slowFactor;
+          if(enemy.attackTimer <= 0) enemyAttack();
+        }
+      }
+    }
+
+    if(!enemy){
+      nextEnemyDelay -= dt;
+      if(nextEnemyDelay <= 0){
+        if(state.victoryPending) showVictory();
+        else spawnEnemy();
+      }
+    }
+
+    if(slash){
+      slash.life -= dt;
+      if(slash.life <= 0) slash = null;
+    }
+
+    updateParticles(dt);
+    updateHUD();
+  }
+
+  function updateParticles(dt){
+    for(const p of particles){
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 80 * dt;
+      p.vx *= .985;
+    }
+    particles = particles.filter(p => p.life > 0);
+    for(const t of damageTexts){ t.life -= dt; }
+    damageTexts = damageTexts.filter(t => t.life > 0);
+  }
+
+  function draw(){
+    const ox = screenShake ? rnd(-screenShake, screenShake) : 0;
+    const oy = screenShake ? rnd(-screenShake, screenShake) : 0;
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(ox, oy);
+    drawBackground();
+    drawArenaLine();
+    if(enemy) drawEnemy(enemy);
+    drawPlayer();
+    if(slash) drawSlash(slash);
+    for(const p of particles) drawParticle(p);
+    drawMessage();
+    ctx.restore();
+  }
+
+  function drawBackground(){
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#09172d');
+    g.addColorStop(.55,'#101b43');
+    g.addColorStop(1,'#050914');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.globalAlpha = 1;
+    for(const st of stars){
+      ctx.globalAlpha = st.a;
+      ctx.fillStyle = '#e6efff';
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = 'rgba(88,173,255,.08)';
+    ctx.lineWidth = 1;
+    const grid = 44;
+    for(let x = W % grid; x < W; x += grid){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y = H % grid; y < H; y += grid){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    ctx.fillStyle = 'rgba(255,255,255,.045)';
+    ctx.beginPath();
+    ctx.arc(W * .82, H * .20, 47, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(W * .18, H * .28, 68, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawArenaLine(){
+    ctx.fillStyle = 'rgba(255,255,255,.06)';
+    ctx.beginPath();
+    ctx.ellipse(W*.5, H*.73, W*.34, 45, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W*.23, H*.52);
+    ctx.quadraticCurveTo(W*.50, H*.58, W*.77, H*.52);
+    ctx.stroke();
+  }
+
+  function drawLoadoutHero(){
+    if(drawFullLoadoutHero()) return true;
+    const bodyImg = getPaperBodyImage();
+    if(!getPaperImageReady(bodyImg)) return false;
+
+    const frameIndexFull = getPaperFrameIndex();
+    const fr = getPaperSheetFrame(bodyImg, frameIndexFull);
+    const weapon = getEquippedWeapon();
+    const weaponId = weapon ? weapon.id : 'wood_stick';
+
+    const attacking = player.swing > 0;
+    const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
+    const hurtT = clamp(player.hurt / 0.26, 0, 1);
+    const spriteH = clamp(H * 0.48, 310, 460);
+    const spriteW = spriteH * (fr.sw / fr.sh);
+    const idleBob = attacking ? 0 : Math.sin(time * 4.0) * 2.2;
+    const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 12 : 0;
+    const bottomY = player.y + clamp(H * 0.128, 72, 110) + idleBob;
+    const dx = Math.round(player.x - spriteW / 2 + attackShift);
+    const dy = Math.round(bottomY - spriteH);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+
+    if(hurtT > 0.01){
+      ctx.shadowColor = `rgba(255,35,55,${0.92 * hurtT})`;
+      ctx.shadowBlur = 28 * hurtT;
+      ctx.filter = `saturate(${1 + hurtT * .6})`;
+    }
+
+    // Body / armor layer, all armors use the same 8 frame grid.
+    ctx.drawImage(bodyImg, fr.sx + 3, fr.sy + 3, Math.max(1, fr.sw - 6), Math.max(1, fr.sh - 6), dx, dy, Math.round(spriteW), Math.round(spriteH));
+    ctx.filter = 'none';
+    ctx.shadowBlur = 0;
+
+    // Weapon layer. For supported weapons, use the hand-sheet overlay so the weapon stays connected to Ben's hand.
+    if(!usesWeaponHandSheet(weaponId)) drawPaperWeaponEffect(dx, dy, spriteW, spriteH, weaponId, frameIndexFull);
+    drawPaperWeapon(dx, dy, spriteW, spriteH, weaponId, frameIndexFull);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '950 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,.72)';
+    ctx.lineWidth = 5;
+    ctx.strokeText('בן', player.x, dy + 15);
+    ctx.fillText('בן', player.x, dy + 15);
+
+    ctx.restore();
+    return true;
+  }
+
+  function drawPlayer(){
+    if(drawLoadoutHero()) return;
+    const attacking = player.swing > 0;
+    const frames = attacking ? heroFrames.attack : heroFrames.idle;
+    if(!heroSheetReady || !frames.length){
+      drawPlayerFallback();
+      return;
+    }
+
+    const hurtT = clamp(player.hurt / 0.26, 0, 1);
+    const hurtJitterX = hurtT > 0 ? Math.sin(time * 70) * 1.4 * hurtT : 0;
+    const hurtJitterY = hurtT > 0 ? Math.cos(time * 54) * 1.1 * hurtT : 0;
+    const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
+    const cycle = attacking
+      ? (0.5 - Math.cos(attackProgress * Math.PI) * 0.5) * (frames.length - 0.001)
+      : time * 7.1;
+    const frameIndex = Math.floor(cycle) % frames.length;
+    const frameImage = frames[frameIndex] || frames[0];
+    const frameW = frameImage.width;
+    const frameH = frameImage.height;
+
+    const spriteH = clamp(H * 0.315, 192, 266);
+    const spriteW = spriteH * (frameW / frameH);
+    const idleBob = attacking ? 0 : Math.sin(time * 4.5) * 2.7;
+    const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 10 : 0;
+    const bottomY = player.y + clamp(H * 0.105, 54, 86) + idleBob + hurtJitterY;
+    const dx = Math.round(player.x - spriteW / 2 + attackShift + hurtJitterX);
+    const dy = Math.round(bottomY - spriteH);
+    const drawW = Math.round(spriteW);
+    const drawH = Math.round(spriteH);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    ctx.filter = 'none';
+    ctx.globalCompositeOperation = 'source-over';
+
+    if(hurtT > 0.01){
+      if(heroTintCanvas.width !== frameW || heroTintCanvas.height !== frameH){
+        heroTintCanvas.width = frameW;
+        heroTintCanvas.height = frameH;
+      }
+      heroTintCtx.clearRect(0, 0, frameW, frameH);
+      heroTintCtx.globalCompositeOperation = 'source-over';
+      heroTintCtx.drawImage(frameImage, 0, 0);
+      heroTintCtx.globalCompositeOperation = 'source-atop';
+      heroTintCtx.fillStyle = `rgba(255,42,62,${0.55 * hurtT})`;
+      heroTintCtx.fillRect(0, 0, frameW, frameH);
+      heroTintCtx.globalCompositeOperation = 'source-over';
+
+      ctx.shadowColor = `rgba(255,35,55,${0.98 * hurtT})`;
+      ctx.shadowBlur = 31 * hurtT;
+      ctx.globalAlpha = 0.98;
+      ctx.drawImage(heroTintCanvas, dx, dy, drawW, drawH);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }else{
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.drawImage(frameImage, dx, dy, drawW, drawH);
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+    ctx.filter = 'none';
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '950 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(0,0,0,.70)';
+    ctx.lineWidth = 5;
+    ctx.strokeText('בן', player.x, dy + 12);
+    ctx.fillText('בן', player.x, dy + 12);
+    ctx.restore();
+  }
+
+  function drawPlayerFallback(){
+    const swing = player.swing > 0 ? Math.sin((player.swing / ATTACK_DURATION) * Math.PI) : 0;
+    const hurt = player.hurt > 0;
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.scale(1 + swing * .04, 1 - swing * .025);
+    ctx.shadowColor = hurt ? 'rgba(255,70,95,.8)' : 'transparent';
+    ctx.shadowBlur = hurt ? 18 : 0;
+
+    // feet
+    ctx.strokeStyle = '#1c2444';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-12, 31); ctx.lineTo(-17, 51);
+    ctx.moveTo(12, 31); ctx.lineTo(17, 51);
+    ctx.stroke();
+
+    // body armor
+    ctx.fillStyle = hurt ? '#ff8396' : (player.armorLevel < 3 ? '#4367ff' : player.armorLevel < 6 ? '#6f88ff' : '#8bd6ff');
+    roundRect(-26, -5, 52, 44, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.28)';
+    roundRect(-17, 4, 34, 10, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.15)';
+    roundRect(-18, 21, 36, 9, 6); ctx.fill();
+
+    // head
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffd1a8';
+    ctx.beginPath(); ctx.arc(0, -32, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2c1c12';
+    ctx.beginPath(); ctx.arc(0, -42, 19, Math.PI, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#111725';
+    ctx.beginPath(); ctx.arc(-7, -33, 2.4, 0, Math.PI*2); ctx.arc(7, -33, 2.4, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#5b3418';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, -26, 6, 0, Math.PI); ctx.stroke();
+
+    // arms and wooden stick
+    ctx.strokeStyle = '#ffd1a8';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-25, 5); ctx.lineTo(-42, 13);
+    ctx.moveTo(25, 5); ctx.lineTo(42 + swing*17, -3 - swing*23);
+    ctx.stroke();
+    ctx.strokeStyle = player.weaponLevel < 3 ? '#8b5a2b' : player.weaponLevel < 6 ? '#b87931' : '#e6efff';
+    ctx.lineWidth = player.weaponLevel < 6 ? 9 : 7;
+    ctx.beginPath();
+    ctx.moveTo(37, -5); ctx.lineTo(68 + swing*39, -32 - swing*27);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '950 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('בן', 0, -62);
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+    ctx.restore();
+  }
+
+  function drawEnemy(e){
+    const hpPct = clamp(e.hp / e.maxHp, 0, 1);
+    const dieScale = e.dead ? clamp(e.death / .48, 0, 1) : 1;
+    const hitAmount = clamp(e.hit / ENEMY_HIT_FLASH_DURATION, 0, 1);
+    const hitPulse = hitAmount > 0 ? Math.sin((1 - hitAmount) * Math.PI) : 0;
+    const attackProgress = e.attackAnim > 0 ? 1 - e.attackAnim / ENEMY_ATTACK_ANIM_DURATION : 0;
+    const attackPulse = e.attackAnim > 0 ? Math.sin(attackProgress * Math.PI) : 0;
+    const idleWave = Math.sin(e.animClock * 2.2 + e.bobOffset);
+
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.rotate(idleWave * 0.026 + attackPulse * 0.055);
+    ctx.scale(
+      dieScale * (1 + hitPulse * 0.08 - attackPulse * 0.03),
+      dieScale * (1 - hitPulse * 0.05 + attackPulse * 0.10)
+    );
+    ctx.globalAlpha = e.dead ? dieScale : 1;
+    const hitGlow = hitAmount;
+    ctx.shadowColor = e.tint || (e.type === 'alien' ? '#6cf6ff' : e.type === 'boss' ? '#ff4f6d' : '#6dff82');
+    ctx.shadowBlur = 18;
+
+    const shadowW = e.drawW * .34;
+    const shadowH = e.drawH * .085;
+    ctx.save();
+    ctx.globalAlpha = .24;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(0, e.drawH * .30, shadowW, shadowH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if(hitGlow > 0){
+      ctx.save();
+      ctx.globalAlpha = .24 * hitGlow;
+      ctx.shadowColor = 'rgba(255,45,72,.95)';
+      ctx.shadowBlur = 28 * hitGlow;
+      ctx.scale(1.04, 1.04);
+      drawEnemyFromSheet(e);
+      ctx.restore();
+    }
+
+    const drewSprite = drawEnemyFromSheet(e);
+    if(!drewSprite){
+      const anim = {
+        blink: e.blink > 0 ? Math.max(.12, e.blink / .14) : 0,
+        hitPulse,
+        attackPulse,
+        idleWave,
+        breathe: .5 + .5 * Math.sin(e.animClock * 2.8 + e.bobOffset)
+      };
+      if(e.type === 'alien') drawAlienBody(e, anim);
+      else if(e.type === 'boss') drawBossBody(e, anim);
+      else drawMonsterBody(e, anim);
+    }
+
+    if(hitGlow > 0){
+      drawEnemyTintOverlay(e, .28 + .44 * hitGlow);
+
+      ctx.save();
+      ctx.globalAlpha = .55 * hitGlow;
+      ctx.strokeStyle = 'rgba(255,35,62,.95)';
+      ctx.lineWidth = 5 + hitGlow * 7;
+      ctx.shadowColor = 'rgba(255,35,62,.95)';
+      ctx.shadowBlur = 24 + hitGlow * 18;
+      ctx.beginPath();
+      ctx.ellipse(0, -e.drawH * .18, e.drawW * (.42 + hitPulse * .08), e.drawH * (.43 + hitPulse * .07), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    const labelY = -e.drawH * .82;
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    roundRect(-72, labelY + 10, 144, 12, 8); ctx.fill();
+    ctx.fillStyle = hpPct > .35 ? '#44f08d' : '#ff4f6d';
+    roundRect(-72, labelY + 10, 144 * hpPct, 12, 8); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '950 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.name, 0, labelY);
+    const statusEntries = e.statusEffects ? Object.values(e.statusEffects) : [];
+    if(statusEntries.length){
+      ctx.font = '900 11px system-ui';
+      statusEntries.slice(0,4).forEach((fx, idx) => {
+        const pillW = 48;
+        const x = -((statusEntries.slice(0,4).length - 1) * 26) + idx * 52;
+        const y = labelY + 24;
+        ctx.fillStyle = 'rgba(0,0,0,.42)';
+        roundRect(x - pillW/2, y - 10, pillW, 18, 9); ctx.fill();
+        ctx.fillStyle = fx.color;
+        ctx.fillText((fx.emoji || '•') + ' ' + fx.label, x, y + 1);
+      });
+    }
+    ctx.restore();
+  }
+
+  function drawAlienBody(e, anim){
+    const blinkScale = 1;
+    const armSwing = Math.sin(e.animClock * 6 + e.bobOffset) * 6 + anim.attackPulse * 8;
+    const hover = Math.sin(e.animClock * 4.5 + e.bobOffset) * 2;
+
+    ctx.fillStyle = 'rgba(108,246,255,.18)';
+    ctx.beginPath();
+    ctx.ellipse(0, e.r * .56, e.r * .92, e.r * .28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#b7f9ff';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-e.r * .48, 2); ctx.lineTo(-e.r * .8, e.r * .15 + armSwing * .25);
+    ctx.moveTo(e.r * .48, 2); ctx.lineTo(e.r * .8, e.r * .15 - armSwing * .25);
+    ctx.stroke();
+
+    ctx.fillStyle = '#42dbff';
+    ctx.beginPath();
+    ctx.ellipse(0, hover, e.r * 1.05, e.r * .82, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#081221';
+    ctx.save();
+    ctx.translate(-14, -8 + hover);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.ellipse(0, 0, 8, 14, -.35, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(14, -8 + hover);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.ellipse(0, 0, 8, 14, .35, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = '#07111f';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 10 + hover, 12, .18, Math.PI - .18); ctx.stroke();
+
+    ctx.strokeStyle = '#b7f9ff';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-20, -e.r * .67 + hover); ctx.quadraticCurveTo(-24, -e.r - 10, -31, -e.r - 20 + Math.sin(e.animClock * 7) * 3);
+    ctx.moveTo(20, -e.r * .67 + hover); ctx.quadraticCurveTo(24, -e.r - 10, 31, -e.r - 20 - Math.sin(e.animClock * 7) * 3);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(-31, -e.r - 20 + Math.sin(e.animClock * 7) * 3, 5, 0, Math.PI * 2); ctx.arc(31, -e.r - 20 - Math.sin(e.animClock * 7) * 3, 5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawMonsterBody(e, anim){
+    const blinkScale = 1;
+    const armSwing = Math.sin(e.animClock * 5.2 + e.bobOffset) * 7;
+    const hornBounce = Math.sin(e.animClock * 4.2 + e.bobOffset) * 3;
+    const mouthOpen = 1 + anim.attackPulse * .5;
+
+    ctx.strokeStyle = '#2fc55a';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-e.r * .56, -4); ctx.lineTo(-e.r * .95, e.r * .22 + armSwing * .3);
+    ctx.moveTo(e.r * .56, -4); ctx.lineTo(e.r * .95, e.r * .22 - armSwing * .3);
+    ctx.stroke();
+
+    ctx.fillStyle = '#45de68';
+    ctx.beginPath();
+    ctx.moveTo(0, -e.r - 2);
+    ctx.lineTo(e.r * .92, -e.r * .12);
+    ctx.lineTo(e.r * .62, e.r * .86);
+    ctx.lineTo(-e.r * .62, e.r * .86);
+    ctx.lineTo(-e.r * .92, -e.r * .12);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = '#0b1220';
+    ctx.save();
+    ctx.translate(-14, -10);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(14, -10);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = '#0b1220';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-18, 13);
+    ctx.quadraticCurveTo(0, 22 + anim.attackPulse * 8, 18, 13);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f6fff6';
+    ctx.beginPath(); ctx.moveTo(-7, 12); ctx.lineTo(-2, 28 * mouthOpen); ctx.lineTo(4, 12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(5, 12); ctx.lineTo(10, 24 * mouthOpen); ctx.lineTo(15, 12); ctx.fill();
+
+    ctx.fillStyle = '#ffdc73';
+    ctx.beginPath(); ctx.moveTo(-30, -33); ctx.lineTo(-50, -58 - hornBounce); ctx.lineTo(-18, -44); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(30, -33); ctx.lineTo(50, -58 - hornBounce); ctx.lineTo(18, -44); ctx.fill();
+
+    ctx.strokeStyle = '#2aa74d';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-18, e.r * .74); ctx.lineTo(-24, e.r + 10 + Math.sin(e.animClock * 5) * 2);
+    ctx.moveTo(18, e.r * .74); ctx.lineTo(24, e.r + 10 - Math.sin(e.animClock * 5) * 2);
+    ctx.stroke();
+  }
+
+  function drawBossBody(e, anim){
+    const blinkScale = 1;
+    const crownSwing = Math.sin(e.animClock * 4.3 + e.bobOffset) * 4;
+    const armSwing = Math.sin(e.animClock * 4.8 + e.bobOffset) * 8;
+
+    ctx.strokeStyle = '#d63f5f';
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-e.r * .62, 4); ctx.lineTo(-e.r * 1.02, e.r * .2 + armSwing * .25);
+    ctx.moveTo(e.r * .62, 4); ctx.lineTo(e.r * 1.02, e.r * .2 - armSwing * .25);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ff526f';
+    ctx.beginPath();
+    ctx.arc(0, 0, e.r, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#721124';
+    ctx.save();
+    ctx.translate(-17, -10);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(17, -10);
+    ctx.scale(1, blinkScale);
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = '#fff4c2';
+    ctx.beginPath(); ctx.moveTo(-10, 14); ctx.lineTo(-2, 35 + anim.attackPulse * 6); ctx.lineTo(5, 14); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(11, 14); ctx.lineTo(19, 33 + anim.attackPulse * 5); ctx.lineTo(26, 14); ctx.fill();
+
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.moveTo(-32, -40); ctx.lineTo(-65, -76 - crownSwing); ctx.lineTo(-22, -58); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(32, -40); ctx.lineTo(65, -76 - crownSwing); ctx.lineTo(22, -58); ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,.18)';
+    ctx.beginPath();
+    ctx.arc(0, 0, e.r * (.68 + anim.attackPulse * .08), 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '950 22px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('בוס', 0, 9);
+  }
+
+  function drawSlash(s){
+    const pct = clamp(s.life / s.max, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = pct;
+    ctx.strokeStyle = '#fff7c9';
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.x1, s.y1);
+    ctx.quadraticCurveTo((s.x1+s.x2)/2 + 40, (s.y1+s.y2)/2 - 40, s.x2, s.y2);
+    ctx.stroke();
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(s.x1, s.y1);
+    ctx.lineTo(s.x2, s.y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawParticle(p){
+    ctx.save();
+    ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMessage(){
+    if(state.messageTime <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = clamp(state.messageTime, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    roundRect(W/2 - 135, H*.50 - 20, 270, 40, 20); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '850 15px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.message, W/2, H*.50 + 6);
+    ctx.restore();
+  }
+
+  function burst(x, y, color, count){
+    for(let i = 0; i < count; i++){
+      const a = Math.random() * Math.PI * 2;
+      const sp = rnd(45, 215);
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        r: rnd(2, 5.2),
+        color,
+        life: rnd(.25, .72),
+        max: .72
+      });
+    }
+  }
+
+  function showText(x, y, text, color, size){
+    const el = document.createElement('div');
+    el.className = 'damageText';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.color = color || '#fff';
+    el.style.fontSize = (size || 16) + 'px';
+    wrap.appendChild(el);
+    setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 820);
+  }
+
+  function roundRect(x, y, w, h, r){
+    const rr = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function loop(now){
+    const dt = Math.min(.033, (now - lastTime) / 1000 || .016);
+    lastTime = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+
+  // ===== פקדים לגרסת טלפון =====
+  const phoneAttackBtn = document.getElementById('phoneAttackBtn');
+  const phoneHealBtn = document.getElementById('phoneHealBtn');
+  function bindPhoneButton(btn, handler){
+    if(!btn) return;
+    ['pointerdown','touchstart','click'].forEach(type => {
+      btn.addEventListener(type, function(e){
+        if(e && e.cancelable) e.preventDefault();
+        if(e && e.stopPropagation) e.stopPropagation();
+        handler(e);
+        return false;
+      }, {passive:false});
+    });
+  }
+  bindPhoneButton(phoneAttackBtn, function(){
+    if(!running || gameOver){ beginGame(); return; }
+    attackEnemy();
+  });
+  bindPhoneButton(phoneHealBtn, function(){
+    if(!running || gameOver){ beginGame(); return; }
+    buyUpgrade('heal');
+  });
+  document.addEventListener('gesturestart', function(e){ if(e.cancelable) e.preventDefault(); }, {passive:false});
+  document.addEventListener('contextmenu', function(e){ if(e.cancelable) e.preventDefault(); }, {passive:false});
+
+  preloadAllLoadouts();
+  initUserSystem();
+  updateHUD();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
+
+<!-- v3 phone standalone: assets embedded, touch attack/heal controls added. -->
