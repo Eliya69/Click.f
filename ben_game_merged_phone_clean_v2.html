@@ -80,6 +80,16 @@
     .miniAuthBtn.google{background:rgba(255,255,255,.95);color:#172033;}
     .miniAuthBtn.needsConfig{opacity:.72;}
     .miniAuthBtn:disabled{opacity:.55;filter:grayscale(1);cursor:not-allowed;}
+    #gameWrap > .userPanel{display:none;}
+    .settingsUserMount{width:100%;}
+    .settingsUserMount .userPanel{position:static;display:flex;max-width:none;width:100%;transform:none;z-index:auto;justify-content:flex-start;padding:10px 11px;background:rgba(255,255,255,.06);border-radius:16px;box-shadow:none;}
+    .settingsUserMount .userPanel.userCollapsed{max-width:none;padding:10px 11px;overflow:visible;}
+    .settingsUserMount .userPanel.userCollapsed .userAvatar,
+    .settingsUserMount .userPanel.userCollapsed .userInfo,
+    .settingsUserMount .userPanel.userCollapsed .authButtons{display:flex;}
+    .settingsUserMount .userToggleBtn{display:none;}
+    .settingsUserMount .userName{max-width:170px;}
+    .settingsUserMount .saveStatus{max-width:210px;overflow:hidden;text-overflow:ellipsis;}
     @media (max-width:680px){
       .userPanel{left:82px;max-width:min(calc(100vw - 98px),360px);gap:6px;padding:6px 7px;}
       .userName{max-width:94px;}
@@ -308,22 +318,21 @@
       .inventorySlotIconWrap{width:88px;flex-basis:88px;}.inventorySlotIcon{width:82px;height:82px;border-radius:16px;}
       .inventorySlotTitle{font-size:15px}.inventorySlotDesc{font-size:11px}.inventoryStat{min-height:48px;padding:6px}.inventoryStatValue{font-size:13px}.inventoryEquipBtn{font-size:11px;min-width:76px;padding:8px 7px;}
     }
+    @media (pointer:coarse) and (orientation:portrait), (max-width:760px) and (orientation:portrait){
+      .phoneLandscapeNote{top:calc(112px + env(safe-area-inset-top,0px));font-size:10px;opacity:.72;}
+      .hudTop{left:84px;right:6px;transform:scale(.92);transform-origin:top right;}
+      .iconStack{transform:scale(.84);transform-origin:top left;}
+      .sideMenuBtn{transform:scale(.92);transform-origin:top right;}
+      .enemyPanel{min-width:82px;padding:6px 7px;}
+      .stats{min-width:min(60vw,230px);}
+    }
     @media (max-height:620px) and (orientation:landscape){
       .phoneControls{bottom:calc(70px + env(safe-area-inset-bottom,0px));}
       .phoneRoundBtn{width:72px;height:72px;font-size:24px;}
       .tapHint{display:none!important;}
       .bottom{transform:scale(.86);transform-origin:bottom center;}
     }
-    body.fullscreenLandscape .phoneLandscapeNote{display:none!important;}
-    body.fullscreenLandscape .hudTop{left:92px;right:72px;}
-    body.fullscreenLandscape .stats{min-width:min(45vw,310px);}
-    body.fullscreenLandscape .enemyPanel{min-width:128px;}
-    body.fullscreenLandscape .iconStack{transform:scale(.86);transform-origin:top left;}
-    body.fullscreenLandscape .phoneControls{bottom:calc(52px + env(safe-area-inset-bottom,0px));padding:0 18px;}
-    body.fullscreenLandscape .bottom{transform:scale(.82);transform-origin:bottom center;}
-    body.fullscreenLandscape .tapHint{display:none!important;}
-    body.fullscreenLandscape .mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px);}
-    @media (orientation:landscape){
+    @media (pointer:coarse) and (orientation:landscape), (max-width:760px) and (orientation:landscape){
       .hudTop{left:92px;right:72px}.stats{min-width:min(45vw,310px)}.enemyPanel{min-width:128px}.iconStack{transform:scale(.86);transform-origin:top left}.phoneControls{bottom:calc(52px + env(safe-area-inset-bottom,0px));padding:0 18px}.bottom{transform:scale(.82);transform-origin:bottom center}.tapHint{display:none!important}.mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px)}
     }
 
@@ -550,6 +559,7 @@
                 </div>
                 <div class="questReward">Google</div>
               </div>
+              <div class="settingsUserMount" id="settingsUserMount"></div>
             </div>
           </section>
         </div>
@@ -588,6 +598,7 @@
   const startBtn = document.getElementById('startBtn');
   const tapHint = document.getElementById('tapHint');
   const userPanel = document.getElementById('userPanel');
+  const settingsUserMount = document.getElementById('settingsUserMount');
   const userToggleBtn = document.getElementById('userToggleBtn');
   const userAvatar = document.getElementById('userAvatar');
   const userNameEl = document.getElementById('userName');
@@ -632,6 +643,13 @@
   const menuTabButtons = Array.from(document.querySelectorAll('[data-menu-tab]'));
   const menuPanels = Array.from(document.querySelectorAll('[data-menu-panel]'));
   const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn');
+  if(fullscreenToggleBtn){
+    const fullscreenRow = fullscreenToggleBtn.closest('.settingRow');
+    const fullscreenTitle = fullscreenRow ? fullscreenRow.querySelector('.settingText b') : null;
+    const fullscreenHint = fullscreenRow ? fullscreenRow.querySelector('.settingText span') : null;
+    if(fullscreenTitle) fullscreenTitle.textContent = 'Full Screen נקי';
+    if(fullscreenHint) fullscreenHint.textContent = 'פותח מסך מלא בלי לכפות סיבוב, כדי שהאנימציות יישארו חלקות יותר.';
+  }
   const missionTabButtons = Array.from(document.querySelectorAll('[data-mission-tab]'));
   const missionPanels = Array.from(document.querySelectorAll('[data-mission-panel]'));
   const questListEls = {
@@ -939,14 +957,21 @@
     saveStatusEl.textContent = text;
     saveStatusEl.style.color = good ? '#9dffbe' : '#ffb6c1';
   }
+  function mountUserPanelInSettings(){
+    if(!settingsUserMount || !userPanel) return;
+    if(userPanel.parentNode !== settingsUserMount) settingsUserMount.appendChild(userPanel);
+    userPanel.classList.remove('userCollapsed');
+  }
   function setUserPanelCollapsed(collapsed){
     if(!userPanel || !userToggleBtn) return;
+    if(settingsUserMount && userPanel.parentNode === settingsUserMount) collapsed = false;
     userPanel.classList.toggle('userCollapsed', collapsed);
     userToggleBtn.textContent = collapsed ? '›' : '‹';
     userToggleBtn.setAttribute('aria-label', collapsed ? 'פתח משתמש' : 'הסתר משתמש');
     storageSet('benGameUserPanelCollapsed', collapsed ? '1' : '0');
   }
   function initUserPanelToggle(){
+    mountUserPanelInSettings();
     const collapsed = storageGet('benGameUserPanelCollapsed') === '1';
     setUserPanelCollapsed(collapsed);
     if(userToggleBtn){
@@ -1534,11 +1559,14 @@
   }
   function closeMainMenu(){ mainMenuOverlay.classList.add('hidden'); mainMenuOverlay.setAttribute('aria-hidden','true'); updatePauseBadge(); }
 
+  function isPhoneLayout(){
+    return W <= 760 || (navigator.maxTouchPoints > 0 && Math.min(W, H) <= 820);
+  }
   function isLandscapeLayout(){
-    return fullscreenLandscapeEnabled || W > H * 1.08;
+    return W > H * 1.08;
   }
   function applyFullscreenClass(){
-    document.body.classList.toggle('fullscreenLandscape', isLandscapeLayout());
+    document.body.classList.toggle('fullscreenLandscape', isPhoneLayout() && isLandscapeLayout());
   }
   function updateFullscreenButton(){
     if(!fullscreenToggleBtn) return;
@@ -1553,10 +1581,8 @@
     try{
       if(fullscreenLandscapeEnabled){
         const target = wrap || document.documentElement;
-        if(target.requestFullscreen && !document.fullscreenElement) await target.requestFullscreen();
-        if(screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {});
+        if(target.requestFullscreen && !document.fullscreenElement) await target.requestFullscreen({navigationUI:'hide'}).catch(() => target.requestFullscreen());
       }else{
-        if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen().catch(() => {});
       }
     }catch(err){
@@ -1923,7 +1949,8 @@
     const attacking = player.swing > 0;
     const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
     const hurtT = clamp(player.hurt / 0.26, 0, 1);
-    const targetContentH = isLandscapeLayout() ? clamp(H * 0.50, 150, 236) : clamp(H * 0.34, 206, 276);
+    const compactHero = isPhoneLayout() && isLandscapeLayout();
+    const targetContentH = compactHero ? clamp(H * 0.50, 150, 236) : clamp(H * 0.34, 206, 276);
     const scale = targetContentH / Math.max(1, metrics.maxContentH);
     const spriteW = frA.sw * scale;
     const spriteH = frA.sh * scale;
@@ -2440,7 +2467,17 @@
   };
 
   function getActorLayout(){
-    const landscape = isLandscapeLayout();
+    const phone = isPhoneLayout();
+    const landscape = phone && isLandscapeLayout();
+    if(!phone){
+      return {
+        playerX: W * .50,
+        playerY: H * .69,
+        enemyX: W * .50,
+        enemyY: H * .35,
+        enemyScale: 1
+      };
+    }
     if(landscape){
       return {
         playerX: W * .66,
@@ -2452,10 +2489,10 @@
     }
     return {
       playerX: W * .50,
-      playerY: H * .66,
+      playerY: H * .70,
       enemyX: W * .50,
-      enemyY: H * .31,
-      enemyScale: clamp(Math.min(W, H) / 430, .78, 1)
+      enemyY: H * .405,
+      enemyScale: clamp(Math.min(W, H) / 470, .68, .88)
     };
   }
 
@@ -2479,7 +2516,7 @@
   function resize(){
     const rawW = Math.floor(window.innerWidth);
     const rawH = Math.floor(window.innerHeight);
-    const compactLandscape = rawW > rawH * 1.08 || fullscreenLandscapeEnabled;
+    const compactLandscape = rawW > rawH * 1.08;
     W = Math.max(320, rawW);
     H = Math.max(compactLandscape ? 300 : 480, rawH);
     canvas.width = Math.floor(W * DPR);
@@ -3084,7 +3121,7 @@
   }
 
   function drawArenaLine(){
-    const landscape = isLandscapeLayout();
+    const landscape = isPhoneLayout() && isLandscapeLayout();
     ctx.fillStyle = 'rgba(255,255,255,.06)';
     ctx.beginPath();
     ctx.ellipse(W*.5, landscape ? H*.72 : H*.72, landscape ? W*.42 : W*.34, landscape ? 34 : 45, 0, 0, Math.PI*2);
@@ -3110,7 +3147,8 @@
     const attacking = player.swing > 0;
     const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
     const hurtT = clamp(player.hurt / 0.26, 0, 1);
-    const spriteH = isLandscapeLayout() ? clamp(H * 0.54, 165, 250) : clamp(H * 0.45, 285, 430);
+    const compactHero = isPhoneLayout() && isLandscapeLayout();
+    const spriteH = compactHero ? clamp(H * 0.54, 165, 250) : clamp(H * 0.45, 285, 430);
     const spriteW = spriteH * (fr.sw / fr.sh);
     const idleBob = attacking ? 0 : Math.sin(time * 4.0) * 2.2;
     const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 12 : 0;
@@ -3171,7 +3209,8 @@
     const frameW = frameImage.width;
     const frameH = frameImage.height;
 
-    const spriteH = isLandscapeLayout() ? clamp(H * 0.46, 150, 230) : clamp(H * 0.30, 184, 258);
+    const compactHero = isPhoneLayout() && isLandscapeLayout();
+    const spriteH = compactHero ? clamp(H * 0.46, 150, 230) : clamp(H * 0.30, 184, 258);
     const spriteW = spriteH * (frameW / frameH);
     const idleBob = attacking ? 0 : Math.sin(time * 4.5) * 2.7;
     const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 10 : 0;
