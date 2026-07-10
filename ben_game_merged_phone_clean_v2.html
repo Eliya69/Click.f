@@ -24,6 +24,13 @@
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;touch-action:none;overscroll-behavior:none;}
     #gameWrap{position:relative;width:100vw;height:100vh;height:100dvh;background:radial-gradient(circle at 50% 18%,#203b78 0%,#121a3b 42%,#050914 100%);}
     canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+    .loadingOverlay{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,rgba(32,59,120,.96),rgba(5,9,20,.98));pointer-events:auto;transition:opacity .22s ease,visibility .22s ease;}
+    .loadingOverlay.done{opacity:0;visibility:hidden;pointer-events:none;}
+    .loadingBox{width:min(88vw,420px);padding:20px;text-align:center;direction:rtl;}
+    .loadingTitle{font-weight:950;font-size:26px;line-height:1.08;margin-bottom:8px;}
+    .loadingSub{font-size:13px;color:#dbe4ff;margin-bottom:14px;}
+    .loadingTrack{height:13px;border-radius:999px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.14);overflow:hidden;}
+    .loadingFill{height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,#58adff,#ffd166);transition:width .16s ease;}
 
     .hudTop{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;left:112px;display:flex;gap:8px;align-items:flex-start;justify-content:flex-end;pointer-events:none;z-index:5;}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.28);backdrop-filter:blur(8px);}
@@ -60,7 +67,7 @@
     .userPanel{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:108px;transform:none;z-index:11;display:flex;align-items:center;gap:8px;padding:7px 9px;direction:rtl;pointer-events:auto;max-width:min(calc(100vw - 124px),420px);transition:max-width .18s ease,padding .18s ease,background .18s ease;}
     .userPanel.userCollapsed{max-width:42px;padding:7px;overflow:hidden;}
     .userPanel.userCollapsed .userAvatar,.userPanel.userCollapsed .userInfo,.userPanel.userCollapsed .authButtons{display:none;}
-    .userToggleBtn{width:30px;height:30px;border-radius:10px;padding:0;display:grid;place-items:center;flex:0 0 auto;box-shadow:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.12);color:var(--text);font-size:18px;line-height:1;}
+    .userToggleBtn{order:-1;width:30px;height:30px;border-radius:10px;padding:0;display:grid;place-items:center;flex:0 0 auto;box-shadow:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.12);color:var(--text);font-size:18px;line-height:1;}
     .userToggleBtn:active{transform:scale(.95);box-shadow:none;}
     .userAvatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-weight:950;flex:0 0 auto;}
     .userAvatar img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -144,6 +151,7 @@
     .menuSection{margin-top:12px}.menuSectionTitle{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:950;margin:0 0 8px}.bannerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.shopBanner{min-height:92px;border-radius:20px;padding:12px;background:linear-gradient(135deg,rgba(88,173,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.13);position:relative;overflow:hidden}.shopBanner b{display:block;font-size:16px;margin-bottom:4px}.shopBanner span{font-size:12px;color:var(--muted);line-height:1.35}.shopBanner.realMoney{background:linear-gradient(135deg,rgba(68,240,141,.17),rgba(255,255,255,.04));border-color:rgba(68,240,141,.28)}.shopBanner.event{background:linear-gradient(135deg,rgba(176,108,255,.18),rgba(255,255,255,.04));border-color:rgba(176,108,255,.33)}
     .questList{display:grid;grid-template-columns:1fr;gap:8px}.questRow{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:16px;padding:11px 12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10)}.questText{display:flex;flex-direction:column;gap:3px;min-width:0}.questText b{font-size:14px}.questText span{font-size:11px;color:var(--muted)}.questReward{white-space:nowrap;border-radius:999px;padding:6px 9px;background:rgba(255,209,102,.13);border:1px solid rgba(255,209,102,.28);color:#ffd166;font-size:11px;font-weight:950}
     .gameModesBox{border-radius:22px;padding:14px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(88,173,255,.07));border:1px solid rgba(255,255,255,.13)}.gameModeLocked{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:18px;padding:12px;background:rgba(0,0,0,.18);border:1px dashed rgba(255,255,255,.18)}.gameModeLocked b{font-size:16px}.gameModeLocked span{font-size:12px;color:var(--muted)}.comingSoon{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-weight:950;font-size:11px;color:#e8eeff;white-space:nowrap}.pauseBadge{position:absolute;left:50%;top:86px;transform:translateX(-50%);z-index:17;border-radius:999px;padding:7px 12px;background:rgba(0,0,0,.44);border:1px solid rgba(255,255,255,.15);font-weight:950;font-size:12px;color:#9dffbe;pointer-events:none}
+    .settingsList{display:grid;gap:12px}.settingRow{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:18px;padding:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.11)}.settingText{display:flex;flex-direction:column;gap:4px;min-width:0}.settingText b{font-size:15px}.settingText span{font-size:12px;color:var(--muted);line-height:1.35}.toggleBtn{min-width:96px;box-shadow:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:var(--text);border-radius:999px;padding:10px 12px;font-size:12px}.toggleBtn.active{background:linear-gradient(180deg,#9dffbe,#44f08d);color:#062012;border-color:rgba(157,255,190,.56)}
     @media (max-width:560px){.sideMenuBtn{right:7px;width:51px;min-height:66px}.bannerGrid{grid-template-columns:1fr}.menuTopButtons{grid-template-columns:1fr;top:-13px}.missionTabs{grid-template-columns:1fr}.mainMenuPanel{width:calc(100vw - 20px);padding:13px}.menuTitle{font-size:20px}.questRow{align-items:flex-start;flex-direction:column}.questReward{align-self:flex-start}.menuNavBtns{grid-template-columns:1fr}.categoryTitleBtn{align-items:flex-start;flex-direction:column}.gameModeButtonTop{align-items:flex-start;flex-direction:column}}
 
 
@@ -306,6 +314,18 @@
       .tapHint{display:none!important;}
       .bottom{transform:scale(.86);transform-origin:bottom center;}
     }
+    body.fullscreenLandscape .phoneLandscapeNote{display:none!important;}
+    body.fullscreenLandscape .hudTop{left:92px;right:72px;}
+    body.fullscreenLandscape .stats{min-width:min(45vw,310px);}
+    body.fullscreenLandscape .enemyPanel{min-width:128px;}
+    body.fullscreenLandscape .iconStack{transform:scale(.86);transform-origin:top left;}
+    body.fullscreenLandscape .phoneControls{bottom:calc(52px + env(safe-area-inset-bottom,0px));padding:0 18px;}
+    body.fullscreenLandscape .bottom{transform:scale(.82);transform-origin:bottom center;}
+    body.fullscreenLandscape .tapHint{display:none!important;}
+    body.fullscreenLandscape .mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px);}
+    @media (orientation:landscape){
+      .hudTop{left:92px;right:72px}.stats{min-width:min(45vw,310px)}.enemyPanel{min-width:128px}.iconStack{transform:scale(.86);transform-origin:top left}.phoneControls{bottom:calc(52px + env(safe-area-inset-bottom,0px));padding:0 18px}.bottom{transform:scale(.82);transform-origin:bottom center}.tapHint{display:none!important}.mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px)}
+    }
 
   
     /* clean-v2 anti flicker */
@@ -316,6 +336,13 @@
 <body>
   <div id="gameWrap">
     <canvas id="game"></canvas>
+    <div class="loadingOverlay" id="loadingOverlay" aria-live="polite">
+      <div class="card loadingBox">
+        <div class="loadingTitle">טוען את המשחק</div>
+        <div class="loadingSub" id="loadingText">מכין את בן, המפלצות והשמירה...</div>
+        <div class="loadingTrack"><div class="loadingFill" id="loadingFill"></div></div>
+      </div>
+    </div>
 
     <div class="userPanel card" id="userPanel" aria-label="משתמש ושמירה">
       <button class="userToggleBtn" id="userToggleBtn" type="button" aria-label="הסתר משתמש">‹</button>
@@ -427,6 +454,7 @@
           <button class="menuTopBtn" type="button" data-menu-tab="realShop"><b>💳 שופ כסף אמיתי</b><span>COMING SOON</span></button>
           <button class="menuTopBtn special" type="button" data-menu-tab="missions"><b>📌 משימות</b><span>Daily · Monthly · General</span></button>
           <button class="menuTopBtn special" type="button" data-menu-tab="gamemodes"><b>🎮 GAMEMODES</b><span>🔒 COMING SOON</span></button>
+          <button class="menuTopBtn special" type="button" data-menu-tab="settings"><b>⚙️ Settings</b><span>Full Screen · Landscape</span></button>
         </div>
 
         <div class="menuPanelArea">
@@ -504,6 +532,26 @@
               <div class="comingSoon">COMING SOON</div>
             </button>
           </section>
+
+          <section class="menuPanelView hidden" data-menu-panel="settings">
+            <div class="panelBigTitle">⚙️ Settings</div>
+            <div class="settingsList">
+              <div class="settingRow">
+                <div class="settingText">
+                  <b>Full Screen לרוחב</b>
+                  <span>מגדיל את המשחק ומנסה לנעול את הטלפון לרוחב כדי שבן והמפלצת ייראו ברור.</span>
+                </div>
+                <button class="toggleBtn" id="fullscreenToggleBtn" type="button">OFF</button>
+              </div>
+              <div class="settingRow">
+                <div class="settingText">
+                  <b>שמירה</b>
+                  <span>במצב אורח המשחק לא שומר. שמירה בענן עובדת רק אחרי Google.</span>
+                </div>
+                <div class="questReward">Google</div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -533,6 +581,9 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const wrap = document.getElementById('gameWrap');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+  const loadingFill = document.getElementById('loadingFill');
   const startScreen = document.getElementById('startScreen');
   const startBtn = document.getElementById('startBtn');
   const tapHint = document.getElementById('tapHint');
@@ -580,6 +631,7 @@
   const mainMenuTitleText = document.getElementById('mainMenuTitleText');
   const menuTabButtons = Array.from(document.querySelectorAll('[data-menu-tab]'));
   const menuPanels = Array.from(document.querySelectorAll('[data-menu-panel]'));
+  const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn');
   const missionTabButtons = Array.from(document.querySelectorAll('[data-mission-tab]'));
   const missionPanels = Array.from(document.querySelectorAll('[data-mission-panel]'));
   const questListEls = {
@@ -596,6 +648,7 @@
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyC-WOaDdfJwfGfcITFzfYl5KTOoJHbN4Jo",
     authDomain: "space-hero-6d1ed.firebaseapp.com",
+    databaseURL: "https://space-hero-6d1ed-default-rtdb.firebaseio.com",
     projectId: "space-hero-6d1ed",
     storageBucket: "space-hero-6d1ed.firebasestorage.app",
     messagingSenderId: "348806318751",
@@ -609,6 +662,7 @@
   let firebaseApp = null;
   let firebaseAuth = null;
   let firebaseDb = null;
+  let firebaseRealtimeDb = null;
   let firebaseUser = null;
   let firebaseReady = false;
   let firebaseSaveTimer = null;
@@ -876,6 +930,9 @@
   function storageSet(key, value){
     try { if(window.localStorage) localStorage.setItem(key, value); return true; } catch(err){ return false; }
   }
+  function storageRemove(key){
+    try { if(window.localStorage) localStorage.removeItem(key); return true; } catch(err){ return false; }
+  }
   function saveKeyFor(user=currentUser){ return 'benGameSave:' + (user && user.id ? user.id : 'guest'); }
   function setSaveStatus(text, good=true){
     if(!saveStatusEl) return;
@@ -919,15 +976,18 @@
   }
 
   async function loadFirebaseSdk(){
-    if(window.firebase && firebase.apps && firebase.auth && firebase.firestore) return;
+    if(window.firebase && firebase.apps && firebase.auth && firebase.firestore && firebase.database) return;
     const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}`;
     await loadExternalScript(`${base}/firebase-app-compat.js`);
     await loadExternalScript(`${base}/firebase-auth-compat.js`);
     await loadExternalScript(`${base}/firebase-firestore-compat.js`);
+    await loadExternalScript(`${base}/firebase-database-compat.js`);
   }
 
   function firebaseSaveRef(user=firebaseUser){
-    if(!firebaseDb || !user) return null;
+    if(!user) return null;
+    if(firebaseRealtimeDb) return firebaseRealtimeDb.ref('users/' + user.uid + '/game/main');
+    if(!firebaseDb) return null;
     return firebaseDb.collection('users').doc(user.uid).collection('game').doc('main');
   }
 
@@ -935,11 +995,13 @@
     const ref = firebaseSaveRef();
     if(!ref) return false;
     try{
-      await ref.set({
+      const payload = {
         ...data,
         cloudSaveReason: reason,
-        cloudSavedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, {merge:false});
+        cloudSavedAt: firebaseRealtimeDb ? firebase.database.ServerValue.TIMESTAMP : firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if(firebaseRealtimeDb) await ref.set(payload);
+      else await ref.set(payload, {merge:false});
       setSaveStatus('Saved to cloud', true);
       return true;
     }catch(err){
@@ -961,11 +1023,13 @@
     setSaveStatus('Loading cloud save...', true);
     try{
       const snap = await ref.get();
-      if(!snap.exists){
+      const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+      if(!exists){
         setSaveStatus('No cloud save yet', true);
         return false;
       }
-      const loaded = applySaveData(snap.data());
+      const data = typeof snap.val === 'function' ? snap.val() : snap.data();
+      const loaded = applySaveData(data);
       if(loaded){
         storageSet(saveKeyFor({id:'firebase:' + user.uid}), JSON.stringify(captureSaveData()));
         setSaveStatus('Cloud save loaded', true);
@@ -1025,6 +1089,10 @@
   }
   function saveGame(reason='auto'){
     if(!saveReady) return;
+    if(currentUser.id === 'guest'){
+      setSaveStatus('אורח - לא נשמר', false);
+      return;
+    }
     const data = captureSaveData();
     const ok = storageSet(saveKeyFor(), JSON.stringify(data));
     if(ok) queueCloudSave(reason, data);
@@ -1058,6 +1126,11 @@
     return true;
   }
   function loadGameForCurrentUser(){
+    if(currentUser.id === 'guest'){
+      setSaveStatus('אורח - לא נשמר', false);
+      updateHUD();
+      return false;
+    }
     const raw = storageGet(saveKeyFor());
     if(!raw){
       setSaveStatus(currentUser.id === 'guest' ? 'שמירה כאורח' : 'אין שמירה עדיין');
@@ -1075,7 +1148,8 @@
   }
   function switchUser(user, options={}){
     currentUser = user && user.id ? user : {...GUEST_USER};
-    storageSet('benGameActiveUser', JSON.stringify(currentUser));
+    if(currentUser.id === 'guest') storageRemove('benGameActiveUser');
+    else storageSet('benGameActiveUser', JSON.stringify(currentUser));
     renderUserPanel();
     if(options.loadLocal !== false) loadGameForCurrentUser();
     renderInventory();
@@ -1129,6 +1203,7 @@
         firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
         firebaseAuth = firebase.auth();
         firebaseDb = firebase.firestore();
+        firebaseRealtimeDb = firebase.database();
         firebaseReady = true;
         renderUserPanel();
         firebaseAuth.onAuthStateChanged(async (user) => {
@@ -1432,7 +1507,8 @@
     playerQuests:{emoji:'🧑‍🚀', title:'משימות בן'},
     realShop:{emoji:'💳', title:'שופ כסף אמיתי'},
     missions:{emoji:'📌', title:'משימות רגילות'},
-    gamemodes:{emoji:'🎮', title:'GAMEMODES'}
+    gamemodes:{emoji:'🎮', title:'GAMEMODES'},
+    settings:{emoji:'⚙️', title:'Settings'}
   };
   function setMainMenuPanel(key){
     const meta = MAIN_MENU_META[key] || MAIN_MENU_META.gifts;
@@ -1457,6 +1533,37 @@
     updatePauseBadge();
   }
   function closeMainMenu(){ mainMenuOverlay.classList.add('hidden'); mainMenuOverlay.setAttribute('aria-hidden','true'); updatePauseBadge(); }
+
+  function isLandscapeLayout(){
+    return fullscreenLandscapeEnabled || W > H * 1.08;
+  }
+  function applyFullscreenClass(){
+    document.body.classList.toggle('fullscreenLandscape', isLandscapeLayout());
+  }
+  function updateFullscreenButton(){
+    if(!fullscreenToggleBtn) return;
+    fullscreenToggleBtn.classList.toggle('active', fullscreenLandscapeEnabled);
+    fullscreenToggleBtn.textContent = fullscreenLandscapeEnabled ? 'ON' : 'OFF';
+  }
+  async function setFullscreenLandscape(enabled){
+    fullscreenLandscapeEnabled = !!enabled;
+    storageSet('benGameFullscreenLandscape', fullscreenLandscapeEnabled ? '1' : '0');
+    applyFullscreenClass();
+    updateFullscreenButton();
+    try{
+      if(fullscreenLandscapeEnabled){
+        const target = wrap || document.documentElement;
+        if(target.requestFullscreen && !document.fullscreenElement) await target.requestFullscreen();
+        if(screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {});
+      }else{
+        if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+        if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen().catch(() => {});
+      }
+    }catch(err){
+      setSaveStatus('Fullscreen not supported here', false);
+    }
+    resize();
+  }
 
   function bindInventoryTrigger(el, kind){
     if(!el) return;
@@ -1488,6 +1595,13 @@
     if(event.key === 'Escape' && !inventoryOverlay.classList.contains('hidden')) closeInventory();
   });
   sideMenuBtn.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); openMainMenu(); });
+  if(fullscreenToggleBtn){
+    fullscreenToggleBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setFullscreenLandscape(!fullscreenLandscapeEnabled);
+    }, {passive:false});
+  }
   mainMenuClose.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); closeMainMenu(); });
   mainMenuOverlay.addEventListener('pointerdown', (event) => { if(event.target === mainMenuOverlay) closeMainMenu(); }, {passive:true});
   function handleMainMenuAction(event){
@@ -1809,7 +1923,7 @@
     const attacking = player.swing > 0;
     const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
     const hurtT = clamp(player.hurt / 0.26, 0, 1);
-    const targetContentH = clamp(H * 0.34, 218, 276);
+    const targetContentH = isLandscapeLayout() ? clamp(H * 0.50, 150, 236) : clamp(H * 0.34, 206, 276);
     const scale = targetContentH / Math.max(1, metrics.maxContentH);
     const spriteW = frA.sw * scale;
     const spriteH = frA.sh * scale;
@@ -2285,6 +2399,8 @@
   let enemy = null;
   let nextEnemyDelay = 0;
   let screenShake = 0;
+  let gameAssetsReady = false;
+  let fullscreenLandscapeEnabled = storageGet('benGameFullscreenLandscape') === '1';
 
   const player = {
     name: 'בן',
@@ -2323,22 +2439,55 @@
     messageTime: 0
   };
 
+  function getActorLayout(){
+    const landscape = isLandscapeLayout();
+    if(landscape){
+      return {
+        playerX: W * .66,
+        playerY: H * .57,
+        enemyX: W * .34,
+        enemyY: H * .43,
+        enemyScale: clamp(H / 620, .66, .92)
+      };
+    }
+    return {
+      playerX: W * .50,
+      playerY: H * .66,
+      enemyX: W * .50,
+      enemyY: H * .31,
+      enemyScale: clamp(Math.min(W, H) / 430, .78, 1)
+    };
+  }
+
+  function applyActorLayout(){
+    const layout = getActorLayout();
+    player.x = layout.playerX;
+    player.y = layout.playerY;
+    if(enemy){
+      enemy.baseX = layout.enemyX;
+      enemy.baseY = layout.enemyY;
+      enemy.x = enemy.baseX;
+      enemy.y = enemy.baseY;
+      if(enemy.baseDrawW && enemy.baseDrawH){
+        enemy.drawW = Math.round(enemy.baseDrawW * layout.enemyScale);
+        enemy.drawH = Math.round(enemy.baseDrawH * layout.enemyScale);
+      }
+    }
+    applyFullscreenClass();
+  }
+
   function resize(){
-    W = Math.max(320, Math.floor(window.innerWidth));
-    H = Math.max(480, Math.floor(window.innerHeight));
+    const rawW = Math.floor(window.innerWidth);
+    const rawH = Math.floor(window.innerHeight);
+    const compactLandscape = rawW > rawH * 1.08 || fullscreenLandscapeEnabled;
+    W = Math.max(320, rawW);
+    H = Math.max(compactLandscape ? 300 : 480, rawH);
     canvas.width = Math.floor(W * DPR);
     canvas.height = Math.floor(H * DPR);
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    player.x = W * 0.50;
-    player.y = H * 0.69;
-    if(enemy){
-      enemy.baseX = W * 0.50;
-      enemy.baseY = H * 0.35;
-      enemy.x = enemy.baseX;
-      enemy.y = enemy.baseY;
-    }
+    applyActorLayout();
     const count = Math.floor((W * H) / 14500);
     stars = Array.from({length: count}, () => ({
       x: Math.random() * W,
@@ -2349,6 +2498,15 @@
   }
 
   window.addEventListener('resize', resize, {passive:true});
+  window.addEventListener('orientationchange', () => setTimeout(resize, 180), {passive:true});
+  document.addEventListener('fullscreenchange', () => {
+    if(!document.fullscreenElement && fullscreenLandscapeEnabled){
+      fullscreenLandscapeEnabled = false;
+      storageSet('benGameFullscreenLandscape', '0');
+      updateFullscreenButton();
+      resize();
+    }
+  });
   resize();
 
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
@@ -2356,9 +2514,66 @@
   function rnd(a, b){ return Math.random() * (b - a) + a; }
   function distance(x1, y1, x2, y2){ return Math.hypot(x1 - x2, y1 - y2); }
 
+  function setLoadingProgress(pct, text){
+    if(loadingFill) loadingFill.style.width = clamp(pct, 4, 100) + '%';
+    if(loadingText && text) loadingText.textContent = text;
+  }
+
+  function preloadImageSource(src, timeoutMs=7000){
+    return new Promise((resolve) => {
+      if(!src) { resolve(false); return; }
+      const img = new Image();
+      let done = false;
+      const finish = (ok) => {
+        if(done) return;
+        done = true;
+        resolve(ok);
+      };
+      const timer = setTimeout(() => finish(false), timeoutMs);
+      img.onload = () => { clearTimeout(timer); finish(true); };
+      img.onerror = () => { clearTimeout(timer); finish(false); };
+      img.src = src;
+      if(img.complete && img.naturalWidth){ clearTimeout(timer); finish(true); }
+    });
+  }
+
+  function collectGameAssetSources(){
+    const sources = new Set([HERO_ICON_DATA, WEAPON_ICON_DATA, ARMOR_ICON_DATA, heroSheet.src]);
+    const add = (src) => { if(src && typeof src === 'string') sources.add(src); };
+    [PAPER_BODY_ASSETS, PAPER_WEAPON_ASSETS, PAPER_WEAPON_EFFECT_ASSETS, ENEMY_SHEET_DATA].forEach(group => {
+      if(group) Object.values(group).forEach(add);
+    });
+    Object.values(FULL_LOADOUT_ASSETS || {}).forEach(group => Object.values(group || {}).forEach(add));
+    document.querySelectorAll('img[src]').forEach(img => add(img.getAttribute('src')));
+    return Array.from(sources).filter(src => src && !src.startsWith('data:'));
+  }
+
+  async function startLoadingSequence(){
+    setLoadingProgress(8, 'טוען תמונות...');
+    const sources = collectGameAssetSources();
+    let completed = 0;
+    await Promise.allSettled(sources.map(async (src) => {
+      const ok = await preloadImageSource(src);
+      completed += 1;
+      const pct = 10 + (completed / Math.max(1, sources.length)) * 82;
+      setLoadingProgress(pct, 'טוען נכסים ' + completed + '/' + sources.length);
+      return ok;
+    }));
+    setLoadingProgress(100, 'מוכן');
+    gameAssetsReady = true;
+    updateHUD();
+    setTimeout(() => {
+      if(loadingOverlay) loadingOverlay.classList.add('done');
+    }, 220);
+  }
+
   function beginGame(event){
     if(event && event.cancelable) event.preventDefault();
     if(event && event.stopPropagation) event.stopPropagation();
+    if(!gameAssetsReady){
+      setLoadingProgress(96, 'עוד רגע, המשחק מסיים טעינה...');
+      return false;
+    }
 
     // בטיחות לטלפון: גם אם click/pointer/touch יורים כמה פעמים, מתחילים רק פעם אחת.
     const alreadyPlaying = startScreen.classList.contains('hidden') && running && !gameOver;
@@ -2389,6 +2604,7 @@
   });
 
   function resetGame(){
+    const layout = getActorLayout();
     running = true;
     gameOver = false;
     particles = [];
@@ -2398,8 +2614,8 @@
     nextEnemyDelay = 0;
     screenShake = 0;
     Object.assign(player, {
-      x: W * .50,
-      y: H * .69,
+      x: layout.playerX,
+      y: layout.playerY,
       hp: 100,
       maxHp: 100,
       baseMaxHp: 100,
@@ -2450,6 +2666,9 @@
     const stats = computeEnemyStats(template, roundNumber);
     const role = template.role || 'normal';
     const hitRadius = Math.round(template.r * (role === 'final' ? 2.25 : role === 'boss' ? 2.0 : role === 'mini' ? 1.85 : 1.7));
+    const layout = getActorLayout();
+    const baseDrawW = Math.round(template.r * 3.4 * template.scale);
+    const baseDrawH = Math.round(template.r * 3.4 * template.scale);
     enemy = {
       templateKey: template.key,
       sheetKey: template.sheet,
@@ -2458,13 +2677,15 @@
       name: template.name,
       icon: template.icon,
       tint: template.tint,
-      baseX: W * .50,
-      baseY: H * .35,
-      x: W * .50,
-      y: H * .35,
+      baseX: layout.enemyX,
+      baseY: layout.enemyY,
+      x: layout.enemyX,
+      y: layout.enemyY,
       r: template.r,
-      drawW: Math.round(template.r * 3.4 * template.scale),
-      drawH: Math.round(template.r * 3.4 * template.scale),
+      baseDrawW,
+      baseDrawH,
+      drawW: Math.round(baseDrawW * layout.enemyScale),
+      drawH: Math.round(baseDrawH * layout.enemyScale),
       hitRadius,
       hp: stats.hp,
       maxHp: stats.hp,
@@ -2863,15 +3084,16 @@
   }
 
   function drawArenaLine(){
+    const landscape = isLandscapeLayout();
     ctx.fillStyle = 'rgba(255,255,255,.06)';
     ctx.beginPath();
-    ctx.ellipse(W*.5, H*.73, W*.34, 45, 0, 0, Math.PI*2);
+    ctx.ellipse(W*.5, landscape ? H*.72 : H*.72, landscape ? W*.42 : W*.34, landscape ? 34 : 45, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.10)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(W*.23, H*.52);
-    ctx.quadraticCurveTo(W*.50, H*.58, W*.77, H*.52);
+    ctx.moveTo(W * (landscape ? .18 : .23), H * (landscape ? .50 : .52));
+    ctx.quadraticCurveTo(W*.50, H * (landscape ? .58 : .58), W * (landscape ? .82 : .77), H * (landscape ? .50 : .52));
     ctx.stroke();
   }
 
@@ -2888,7 +3110,7 @@
     const attacking = player.swing > 0;
     const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
     const hurtT = clamp(player.hurt / 0.26, 0, 1);
-    const spriteH = clamp(H * 0.48, 310, 460);
+    const spriteH = isLandscapeLayout() ? clamp(H * 0.54, 165, 250) : clamp(H * 0.45, 285, 430);
     const spriteW = spriteH * (fr.sw / fr.sh);
     const idleBob = attacking ? 0 : Math.sin(time * 4.0) * 2.2;
     const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 12 : 0;
@@ -2949,7 +3171,7 @@
     const frameW = frameImage.width;
     const frameH = frameImage.height;
 
-    const spriteH = clamp(H * 0.315, 192, 266);
+    const spriteH = isLandscapeLayout() ? clamp(H * 0.46, 150, 230) : clamp(H * 0.30, 184, 258);
     const spriteW = spriteH * (frameW / frameH);
     const idleBob = attacking ? 0 : Math.sin(time * 4.5) * 2.7;
     const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 10 : 0;
@@ -3438,6 +3660,9 @@
 
   preloadAllLoadouts();
   initUserSystem();
+  updateFullscreenButton();
+  applyFullscreenClass();
+  startLoadingSequence();
   updateHUD();
   requestAnimationFrame(loop);
 })();
