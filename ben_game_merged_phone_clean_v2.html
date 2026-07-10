@@ -593,9 +593,26 @@
   const gemsEl = document.getElementById('gems');
   const SAVE_VERSION = 1;
   const GOOGLE_CLIENT_ID = '665945520146-q6dh7ud9opbjl8nqrc72ddjccb8gcql9.apps.googleusercontent.com';
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyC-WOaDdfJwfGfcITFzfYl5KTOoJHbN4Jo",
+    authDomain: "space-hero-6d1ed.firebaseapp.com",
+    projectId: "space-hero-6d1ed",
+    storageBucket: "space-hero-6d1ed.firebasestorage.app",
+    messagingSenderId: "348806318751",
+    appId: "1:348806318751:web:8386c1936dd94e869430aa",
+    measurementId: "G-06HGYGJLN2"
+  };
+  const FIREBASE_SDK_VERSION = "10.12.5";
   const GUEST_USER = { id:'guest', name:'אורח', picture:'' };
   let currentUser = {...GUEST_USER};
   let saveReady = false;
+  let firebaseApp = null;
+  let firebaseAuth = null;
+  let firebaseDb = null;
+  let firebaseUser = null;
+  let firebaseReady = false;
+  let firebaseSaveTimer = null;
+  let firebaseAuthStarted = false;
   const crateOverlay = document.getElementById('crateOverlay');
   const crateClose = document.getElementById('crateClose');
   const crateTitle = document.getElementById('crateTitle');
@@ -883,17 +900,97 @@
       }, {passive:false});
     }
   }
+
+  function isFirebaseSignedIn(){
+    return !!(firebaseReady && firebaseAuth && firebaseUser && currentUser.id === 'firebase:' + firebaseUser.uid);
+  }
+
+  function loadExternalScript(src){
+    return new Promise((resolve, reject) => {
+      if(document.querySelector(`script[src="${src}"]`)){ resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.defer = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Could not load ' + src));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadFirebaseSdk(){
+    if(window.firebase && firebase.apps && firebase.auth && firebase.firestore) return;
+    const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}`;
+    await loadExternalScript(`${base}/firebase-app-compat.js`);
+    await loadExternalScript(`${base}/firebase-auth-compat.js`);
+    await loadExternalScript(`${base}/firebase-firestore-compat.js`);
+  }
+
+  function firebaseSaveRef(user=firebaseUser){
+    if(!firebaseDb || !user) return null;
+    return firebaseDb.collection('users').doc(user.uid).collection('game').doc('main');
+  }
+
+  async function saveGameToCloud(reason='auto', data=captureSaveData()){
+    const ref = firebaseSaveRef();
+    if(!ref) return false;
+    try{
+      await ref.set({
+        ...data,
+        cloudSaveReason: reason,
+        cloudSavedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:false});
+      setSaveStatus('Saved to cloud', true);
+      return true;
+    }catch(err){
+      console.warn('Firebase cloud save failed', err);
+      setSaveStatus('Cloud save failed', false);
+      return false;
+    }
+  }
+
+  function queueCloudSave(reason='auto', data=captureSaveData()){
+    if(!isFirebaseSignedIn()) return;
+    clearTimeout(firebaseSaveTimer);
+    firebaseSaveTimer = setTimeout(() => saveGameToCloud(reason, data), 450);
+  }
+
+  async function loadCloudGameForUser(user){
+    const ref = firebaseSaveRef(user);
+    if(!ref) return false;
+    setSaveStatus('Loading cloud save...', true);
+    try{
+      const snap = await ref.get();
+      if(!snap.exists){
+        setSaveStatus('No cloud save yet', true);
+        return false;
+      }
+      const loaded = applySaveData(snap.data());
+      if(loaded){
+        storageSet(saveKeyFor({id:'firebase:' + user.uid}), JSON.stringify(captureSaveData()));
+        setSaveStatus('Cloud save loaded', true);
+        renderInventory();
+      }else{
+        setSaveStatus('Cloud save could not load', false);
+      }
+      return loaded;
+    }catch(err){
+      console.warn('Firebase cloud load failed', err);
+      setSaveStatus('Cloud load failed', false);
+      return false;
+    }
+  }
   function renderUserPanel(){
     if(userNameEl) userNameEl.textContent = currentUser.name || 'אורח';
     if(userAvatar){
       userAvatar.innerHTML = currentUser.picture ? '<img src="' + currentUser.picture + '" alt="">' : (currentUser.name || '?').trim().slice(0,1);
     }
     if(logoutBtn) logoutBtn.disabled = currentUser.id === 'guest';
-    const googleConfigured = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('PASTE_');
+    const googleConfigured = FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey;
     if(googleLoginBtn){
-      googleLoginBtn.disabled = false;
+      googleLoginBtn.disabled = !googleConfigured || firebaseAuthStarted;
       googleLoginBtn.classList.toggle('needsConfig', !googleConfigured);
-      googleLoginBtn.title = googleConfigured ? 'התחבר עם Google' : 'צריך לשים GOOGLE_CLIENT_ID בקוד';
+      googleLoginBtn.title = googleConfigured ? 'התחבר עם Google ושמירה בענן' : 'צריך Firebase config';
     }
   }
   function captureSaveData(){
@@ -928,7 +1025,9 @@
   }
   function saveGame(reason='auto'){
     if(!saveReady) return;
-    const ok = storageSet(saveKeyFor(), JSON.stringify(captureSaveData()));
+    const data = captureSaveData();
+    const ok = storageSet(saveKeyFor(), JSON.stringify(data));
+    if(ok) queueCloudSave(reason, data);
     setSaveStatus(ok ? 'נשמר עכשיו' : 'השמירה נכשלה', ok);
   }
   function applySaveData(data){
@@ -974,11 +1073,11 @@
       return false;
     }
   }
-  function switchUser(user){
+  function switchUser(user, options={}){
     currentUser = user && user.id ? user : {...GUEST_USER};
     storageSet('benGameActiveUser', JSON.stringify(currentUser));
     renderUserPanel();
-    loadGameForCurrentUser();
+    if(options.loadLocal !== false) loadGameForCurrentUser();
     renderInventory();
   }
   function decodeGoogleJwt(token){
@@ -998,21 +1097,66 @@
     }
   }
   function initGoogleLogin(){
-    const configured = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('PASTE_');
-    if(!configured) return;
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      if(!window.google || !google.accounts || !google.accounts.id) return;
-      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select:false, cancel_on_tap_outside:true });
-      if(googleLoginBtn){
-        googleLoginBtn.disabled = false;
-        googleLoginBtn.addEventListener('click', () => google.accounts.id.prompt(), {passive:true});
+    if(!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey){
+      if(googleLoginBtn) googleLoginBtn.addEventListener('click', () => setSaveStatus('Firebase config missing', false), {passive:true});
+      return;
+    }
+    if(googleLoginBtn){
+      googleLoginBtn.addEventListener('click', async () => {
+        if(!firebaseAuth){
+          setSaveStatus('Firebase is still loading', false);
+          return;
+        }
+        firebaseAuthStarted = true;
+        renderUserPanel();
+        try{
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({prompt:'select_account'});
+          await firebaseAuth.signInWithPopup(provider);
+        }catch(err){
+          console.warn('Firebase Google login failed', err);
+          setSaveStatus('Google login failed', false);
+        }finally{
+          firebaseAuthStarted = false;
+          renderUserPanel();
+        }
+      }, {passive:true});
+    }
+    (async () => {
+      try{
+        setSaveStatus('Preparing cloud save...', true);
+        await loadFirebaseSdk();
+        firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+        firebaseAuth = firebase.auth();
+        firebaseDb = firebase.firestore();
+        firebaseReady = true;
+        renderUserPanel();
+        firebaseAuth.onAuthStateChanged(async (user) => {
+          firebaseUser = user || null;
+          if(user){
+            const firebaseProfile = {
+              id:'firebase:' + user.uid,
+              name:user.displayName || user.email || 'Google',
+              picture:user.photoURL || ''
+            };
+            switchUser(firebaseProfile, {loadLocal:false});
+            const cloudLoaded = await loadCloudGameForUser(user);
+            if(!cloudLoaded){
+              loadGameForCurrentUser();
+              await saveGameToCloud('first-login');
+            }
+          }else if(currentUser.id && currentUser.id.startsWith('firebase:')){
+            switchUser({...GUEST_USER});
+          }
+          renderUserPanel();
+        });
+      }catch(err){
+        console.warn('Firebase init failed', err);
+        firebaseReady = false;
+        setSaveStatus('Firebase failed to load', false);
+        renderUserPanel();
       }
-    };
-    document.head.appendChild(script);
+    })();
   }
   function initUserSystem(){
     const rawUser = storageGet('benGameActiveUser');
@@ -1024,8 +1168,14 @@
     renderUserPanel();
     loadGameForCurrentUser();
     initGoogleLogin();
-    if(guestLoginBtn) guestLoginBtn.addEventListener('click', () => switchUser({...GUEST_USER}), {passive:true});
-    if(logoutBtn) logoutBtn.addEventListener('click', () => switchUser({...GUEST_USER}), {passive:true});
+    if(guestLoginBtn) guestLoginBtn.addEventListener('click', () => {
+      if(firebaseAuth && firebaseAuth.currentUser) firebaseAuth.signOut().catch(err => console.warn('Firebase sign out failed', err));
+      switchUser({...GUEST_USER});
+    }, {passive:true});
+    if(logoutBtn) logoutBtn.addEventListener('click', () => {
+      if(firebaseAuth && firebaseAuth.currentUser) firebaseAuth.signOut().catch(err => console.warn('Firebase sign out failed', err));
+      switchUser({...GUEST_USER});
+    }, {passive:true});
     if(googleLoginBtn && (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('PASTE_'))){
       googleLoginBtn.addEventListener('click', () => setSaveStatus('צריך Google Client ID', false), {passive:true});
     }
