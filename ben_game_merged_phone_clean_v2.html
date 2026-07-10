@@ -1428,6 +1428,7 @@
     }
   };
   const fullLoadoutImages = {};
+  const fullLoadoutFrameCache = new WeakMap();
 
   // Paper Doll v2: high-quality body/armor sheet + anchored weapon layer
   const PAPER_BODY_ASSETS = {
@@ -1558,6 +1559,80 @@
 
   function getPaperImageReady(img){ return !!(img && img.complete && img.naturalWidth); }
 
+  function getFullLoadoutMetrics(img){
+    if(fullLoadoutFrameCache.has(img)) return fullLoadoutFrameCache.get(img);
+    const cols = 4;
+    const rows = 2;
+    const frameW = Math.floor(img.naturalWidth / cols);
+    const frameH = Math.floor(img.naturalHeight / rows);
+    const scratch = document.createElement('canvas');
+    scratch.width = frameW;
+    scratch.height = frameH;
+    const scratchCtx = scratch.getContext('2d', { alpha:true });
+    const frames = [];
+    let maxContentH = 1;
+
+    for(let frameIndex = 0; frameIndex < cols * rows; frameIndex++){
+      const col = frameIndex % cols;
+      const row = Math.floor(frameIndex / cols);
+      scratchCtx.clearRect(0, 0, frameW, frameH);
+      scratchCtx.drawImage(img, col * frameW, row * frameH, frameW, frameH, 0, 0, frameW, frameH);
+      const pixels = scratchCtx.getImageData(0, 0, frameW, frameH).data;
+      let minX = frameW, minY = frameH, maxX = -1, maxY = -1;
+      for(let y = 0; y < frameH; y++){
+        for(let x = 0; x < frameW; x++){
+          if(pixels[(y * frameW + x) * 4 + 3] > 12){
+            if(x < minX) minX = x;
+            if(y < minY) minY = y;
+            if(x > maxX) maxX = x;
+            if(y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if(maxX < minX || maxY < minY){
+        frames.push({sx:col * frameW, sy:row * frameH, sw:frameW, sh:frameH, anchorX:.5, anchorY:1, contentH:frameH});
+        maxContentH = Math.max(maxContentH, frameH);
+        continue;
+      }
+
+      const contentH = Math.max(1, maxY - minY + 1);
+      maxContentH = Math.max(maxContentH, contentH);
+      const footTop = Math.max(minY, Math.floor(maxY - contentH * .18));
+      let footMinX = frameW, footMaxX = -1;
+      for(let y = footTop; y <= maxY; y++){
+        for(let x = minX; x <= maxX; x++){
+          if(pixels[(y * frameW + x) * 4 + 3] > 18){
+            if(x < footMinX) footMinX = x;
+            if(x > footMaxX) footMaxX = x;
+          }
+        }
+      }
+      const footCenterX = footMaxX >= footMinX ? (footMinX + footMaxX) / 2 : (minX + maxX) / 2;
+      const pad = Math.round(Math.min(frameW, frameH) * .035);
+      const cropX = Math.max(0, minX - pad);
+      const cropY = Math.max(0, minY - pad);
+      const cropRight = Math.min(frameW - 1, maxX + pad);
+      const cropBottom = Math.min(frameH - 1, maxY + pad);
+      const cropW = Math.max(1, cropRight - cropX + 1);
+      const cropH = Math.max(1, cropBottom - cropY + 1);
+
+      frames.push({
+        sx: col * frameW + cropX,
+        sy: row * frameH + cropY,
+        sw: cropW,
+        sh: cropH,
+        anchorX: clamp((footCenterX - cropX) / cropW, .20, .80),
+        anchorY: clamp((maxY - cropY) / cropH, .76, .99),
+        contentH
+      });
+    }
+
+    const metrics = {frames, maxContentH};
+    fullLoadoutFrameCache.set(img, metrics);
+    return metrics;
+  }
+
   function getFullLoadoutImage(){
     const armor = getEquippedArmor();
     const weapon = getEquippedWeapon();
@@ -1579,18 +1654,20 @@
     const img = getFullLoadoutImage();
     if(!img) return false;
     const blend = getPaperFrameBlend();
-    const frA = getPaperSheetFrame(img, blend.current);
-    const frB = getPaperSheetFrame(img, blend.next);
+    const metrics = getFullLoadoutMetrics(img);
+    const frA = metrics.frames[blend.current] || metrics.frames[0];
     const attacking = player.swing > 0;
     const attackProgress = clamp(1 - player.swing / ATTACK_DURATION, 0, 1);
     const hurtT = clamp(player.hurt / 0.26, 0, 1);
-    const spriteH = clamp(H * 0.48, 310, 460);
-    const spriteW = spriteH * (frA.sw / frA.sh);
+    const targetContentH = clamp(H * 0.34, 218, 276);
+    const scale = targetContentH / Math.max(1, metrics.maxContentH);
+    const spriteW = frA.sw * scale;
+    const spriteH = frA.sh * scale;
     const idleBob = attacking ? 0 : Math.sin(time * 4.0) * 2.2;
     const attackShift = attacking ? Math.sin(attackProgress * Math.PI) * 3 : 0;
     const bottomY = player.y + clamp(H * 0.128, 72, 110) + idleBob;
-    const dx = Math.round(player.x - spriteW / 2 + attackShift);
-    const dy = Math.round(bottomY - spriteH);
+    const dx = Math.round(player.x - spriteW * frA.anchorX + attackShift);
+    const dy = Math.round(bottomY - spriteH * frA.anchorY);
 
     const drawFrame = (fr, alpha=1) => {
       if(alpha <= 0.001) return;
