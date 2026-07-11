@@ -1599,7 +1599,7 @@
     if(fullscreenLandscapeEnabled) closeMainMenu();
     try{
       if(fullscreenLandscapeEnabled){
-        const target = wrap || document.documentElement;
+        const target = document.documentElement;
         if(target.requestFullscreen && !document.fullscreenElement) await target.requestFullscreen({navigationUI:'hide'}).catch(() => target.requestFullscreen());
         if(screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {});
         closeMainMenu();
