@@ -332,8 +332,18 @@
       .tapHint{display:none!important;}
       .bottom{transform:scale(.86);transform-origin:bottom center;}
     }
-    @media (pointer:coarse) and (orientation:landscape), (max-width:760px) and (orientation:landscape){
-      .hudTop{left:92px;right:72px}.stats{min-width:min(45vw,310px)}.enemyPanel{min-width:128px}.iconStack{transform:scale(.86);transform-origin:top left}.phoneControls{bottom:calc(52px + env(safe-area-inset-bottom,0px));padding:0 18px}.bottom{transform:scale(.82);transform-origin:bottom center}.tapHint{display:none!important}.mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px)}
+    @media (pointer:coarse) and (orientation:landscape), (max-width:760px) and (orientation:landscape), (orientation:landscape) and (max-height:560px){
+      .hudTop{left:82px;right:62px;gap:5px;transform:scale(.90);transform-origin:top right;align-items:flex-start}
+      .stats{flex:1 1 0;min-width:0;max-width:360px;padding:6px 8px}
+      .enemyPanel{flex:0 0 auto;min-width:112px;padding:6px 8px}
+      .enemyPanel b{font-size:14px}
+      .name{font-size:13px}.coin{font-size:12px}.small{font-size:9px}.bar{height:8px;margin-top:3px}
+      .iconStack{transform:scale(.78);transform-origin:top left}
+      .phoneControls{bottom:calc(48px + env(safe-area-inset-bottom,0px));padding:0 16px}
+      .bottom{transform:scale(.76);transform-origin:bottom center}
+      .sideMenuBtn{right:6px;width:48px;min-height:58px;transform:translateY(-50%) scale(.92);transform-origin:center right}
+      .tapHint{display:none!important}
+      .mainMenuPanel{width:min(92vw,820px);max-height:calc(100dvh - 18px)}
     }
 
   
@@ -647,8 +657,8 @@
     const fullscreenRow = fullscreenToggleBtn.closest('.settingRow');
     const fullscreenTitle = fullscreenRow ? fullscreenRow.querySelector('.settingText b') : null;
     const fullscreenHint = fullscreenRow ? fullscreenRow.querySelector('.settingText span') : null;
-    if(fullscreenTitle) fullscreenTitle.textContent = 'Full Screen נקי';
-    if(fullscreenHint) fullscreenHint.textContent = 'פותח מסך מלא בלי לכפות סיבוב, כדי שהאנימציות יישארו חלקות יותר.';
+    if(fullscreenTitle) fullscreenTitle.textContent = 'Full Screen לרוחב';
+    if(fullscreenHint) fullscreenHint.textContent = 'פותח מסך מלא ומנסה לסובב לרוחב, ואז מסדר מחדש את המשחק כדי שהאנימציות יישארו חלקות.';
   }
   const missionTabButtons = Array.from(document.querySelectorAll('[data-mission-tab]'));
   const missionPanels = Array.from(document.querySelectorAll('[data-mission-panel]'));
@@ -1560,7 +1570,7 @@
   function closeMainMenu(){ mainMenuOverlay.classList.add('hidden'); mainMenuOverlay.setAttribute('aria-hidden','true'); updatePauseBadge(); }
 
   function isPhoneLayout(){
-    return W <= 760 || (navigator.maxTouchPoints > 0 && Math.min(W, H) <= 820);
+    return W <= 760 || (navigator.maxTouchPoints > 0 && Math.min(W, H) <= 820) || (H <= 560 && W > H * 1.08);
   }
   function isLandscapeLayout(){
     return W > H * 1.08;
@@ -1573,6 +1583,14 @@
     fullscreenToggleBtn.classList.toggle('active', fullscreenLandscapeEnabled);
     fullscreenToggleBtn.textContent = fullscreenLandscapeEnabled ? 'ON' : 'OFF';
   }
+  function scheduleFullscreenResize(){
+    [0, 120, 360, 800].forEach((delay) => {
+      setTimeout(() => {
+        lastTime = performance.now();
+        resize();
+      }, delay);
+    });
+  }
   async function setFullscreenLandscape(enabled){
     fullscreenLandscapeEnabled = !!enabled;
     storageSet('benGameFullscreenLandscape', fullscreenLandscapeEnabled ? '1' : '0');
@@ -1582,13 +1600,16 @@
       if(fullscreenLandscapeEnabled){
         const target = wrap || document.documentElement;
         if(target.requestFullscreen && !document.fullscreenElement) await target.requestFullscreen({navigationUI:'hide'}).catch(() => target.requestFullscreen());
+        if(screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {});
+        closeMainMenu();
       }else{
+        if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen().catch(() => {});
       }
     }catch(err){
       setSaveStatus('Fullscreen not supported here', false);
     }
-    resize();
+    scheduleFullscreenResize();
   }
 
   function bindInventoryTrigger(el, kind){
