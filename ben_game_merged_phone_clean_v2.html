@@ -319,12 +319,12 @@
       .inventorySlotTitle{font-size:15px}.inventorySlotDesc{font-size:11px}.inventoryStat{min-height:48px;padding:6px}.inventoryStatValue{font-size:13px}.inventoryEquipBtn{font-size:11px;min-width:76px;padding:8px 7px;}
     }
     @media (pointer:coarse) and (orientation:portrait), (max-width:760px) and (orientation:portrait){
-      .phoneLandscapeNote{top:calc(112px + env(safe-area-inset-top,0px));font-size:10px;opacity:.72;}
-      .hudTop{left:84px;right:6px;transform:scale(.92);transform-origin:top right;}
-      .iconStack{transform:scale(.84);transform-origin:top left;}
+      .phoneLandscapeNote{display:none;}
+      .hudTop{left:90px;right:6px;transform:none;transform-origin:top right;}
+      .iconStack{top:calc(82px + env(safe-area-inset-top,0px));transform:scale(.78);transform-origin:top left;}
       .sideMenuBtn{transform:scale(.92);transform-origin:top right;}
-      .enemyPanel{min-width:82px;padding:6px 7px;}
-      .stats{min-width:min(60vw,230px);}
+      .enemyPanel{display:none;}
+      .stats{min-width:0;width:min(calc(100vw - 104px),258px);padding:6px 7px;}
     }
     @media (max-height:620px) and (orientation:landscape){
       .phoneControls{bottom:calc(70px + env(safe-area-inset-bottom,0px));}
@@ -1596,6 +1596,7 @@
     storageSet('benGameFullscreenLandscape', fullscreenLandscapeEnabled ? '1' : '0');
     applyFullscreenClass();
     updateFullscreenButton();
+    if(fullscreenLandscapeEnabled) closeMainMenu();
     try{
       if(fullscreenLandscapeEnabled){
         const target = wrap || document.documentElement;
@@ -1608,6 +1609,7 @@
       }
     }catch(err){
       setSaveStatus('Fullscreen not supported here', false);
+      if(fullscreenLandscapeEnabled) closeMainMenu();
     }
     scheduleFullscreenResize();
   }
